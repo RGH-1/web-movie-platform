@@ -139,7 +139,7 @@ git push -u origin feature/123-tmdb-search
 ```
 
 
-Resolve conflicts carefully, run relevant tests, then push the branch. Open a GitHub Pull Request into `main`, link the Azure Boards work item, and request at least one teammate's review (Optional). Merge only after approval and checks pass. Delete the feature branch after merging.
+Resolve conflicts carefully, run relevant tests, then push the branch. Open a GitHub Pull Request into `dev`, link the Azure Boards work item, and request at least one teammate's review (Optional). Merge only after approval and checks pass. Delete the feature branch after merging.
 
 Avoid force-pushing shared branches. Never commit secrets, `.env` files, `node_modules/`, `vendor/`, build outputs, or local database dumps.
 
