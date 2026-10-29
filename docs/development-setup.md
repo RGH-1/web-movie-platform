@@ -91,6 +91,23 @@ npm run dev
 
 Vite will display the local address of the React application.
 
+## 7. Frontend API Configuration
+
+The React frontend uses Vite environment variables to configure the Laravel API base URL.
+
+1. Navigate to the `frontend` directory.
+2. Create a `.env.local` file if one does not already exist.
+3. Add the following configuration:
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+4. Start the Laravel backend and React development server.
+5. Open the React application and verify that the backend API status reports a successful connection.
+
+Do not commit `.env.local`. Use `.env.example` as the template for documenting required environment variables.
+
 ## Important Notes
 
 * Do not commit `.env` files, passwords, API keys, or other secrets.
