@@ -108,6 +108,56 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api
 
 Do not commit `.env.local`. Use `.env.example` as the template for documenting required environment variables.
 
+## 8. TMDB API Configuration
+
+The application uses The Movie Database (TMDB) API to retrieve movie information.
+
+### Obtain API Credentials
+
+1. Create an account at https://www.themoviedb.org.
+2. Navigate to Settings > API.
+3. Click Request an API Key.
+4. Choose Yes (This is for my own personal use).
+5. Fill in the information (you can use fake first and last name and fake phone number) - for the application URL just put it http://localhost
+3. Request API access for the project.
+4. Copy your API Read Access Token.
+
+### Configure Laravel
+
+Add the following variables to `backend/.env`:
+
+```dotenv
+TMDB_BASE_URL=https://api.themoviedb.org/3
+TMDB_API_READ_TOKEN=your_token_here
+```
+Replace `your_token_here` with your actual token.
+
+### Verify Configuration
+
+From the `backend` directory, run:
+
+```bash
+php artisan config:clear
+php artisan tinker
+```
+Inside Tinker, verify the token is configured:
+
+```php
+filled(config('services.tmdb.token'))
+```
+Expected result: `true`.
+
+To verify access to TMDB:
+
+```php
+$response = Illuminate\Support\Facades\Http::withToken(
+    config('services.tmdb.token')
+)->get(config('services.tmdb.base_url') . '/configuration');
+
+$response->status();
+```
+Expected HTTP status: `200`.
+
 ## Important Notes
 
 * Do not commit `.env` files, passwords, API keys, or other secrets.
