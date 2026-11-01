@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'tmdb' => [
+        'base_url' => env('TMDB_BASE_URL'),
+        'token' => env('TMDB_API_READ_TOKEN'),
+    ],
+
 ];
