@@ -158,6 +158,38 @@ $response->status();
 ```
 Expected HTTP status: `200`.
 
+
+## 9. Configure and verify session authentication
+
+Run Laravel and Vite on the same hostname. For the default local ports, set
+these values in `backend/.env`:
+
+```dotenv
+APP_URL=http://127.0.0.1:8000
+FRONTEND_URL=http://127.0.0.1:5173
+SANCTUM_STATEFUL_DOMAINS=127.0.0.1:5173
+SESSION_DOMAIN=null
+```
+
+If Vite uses a different port, update both frontend settings. From `backend`,
+run `php artisan config:clear` after editing `.env`. If you use database
+sessions, apply the existing migrations to your development database.
+
+Run `php artisan test --filter=LoginLogoutTest` from `backend` to verify the
+login and logout flow against the test database.
+
+For a manual check with an existing development user, keep the same cookie
+jar and send `Origin: http://127.0.0.1:5173` and `Accept: application/json`.
+Request `GET /sanctum/csrf-cookie` and expect `204`. Send the URL-decoded
+`XSRF-TOKEN` cookie as `X-XSRF-TOKEN` on `POST /api/v1/auth/login`. Expect `200`
+with the user's ID, name, and email. Use the updated cookies and CSRF token
+to call `POST /api/v1/auth/logout` and expect `204`. Repeat logout with the new
+guest cookies and CSRF token and expect `401`.
+
+See the [authentication API contract](api/auth-contract.md) for request
+bodies and response examples.
+
+
 ## Important Notes
 
 * Do not commit `.env` files, passwords, API keys, or other secrets.
