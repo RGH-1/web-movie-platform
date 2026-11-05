@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TmdbIntegrationController;
+use App\Http\Controllers\AuthSessionController;
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
@@ -13,3 +14,14 @@ Route::get('/integration/tmdb/search',[
     TmdbIntegrationController::class,
     'search',
 ]);
+
+Route::prefix('v1')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('/login', [AuthSessionController::class, 'login'])->middleware('throttle:login');
+        Route::post('/logout', [AuthSessionController::class, 'logout'])->middleware('auth:sanctum');
+    });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        //Other protected routes that require authentication can be added here
+    });
+});
