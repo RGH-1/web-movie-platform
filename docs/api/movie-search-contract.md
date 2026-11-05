@@ -107,3 +107,97 @@ with an empty list.
 React shows a no-results message when `total_results` is `0`. If
 `total_results` is positive and `data` is empty, show that the requested
 page has no results.
+
+
+## Error responses
+
+| HTTP status | Condition | Frontend behavior |
+| --- | --- | --- |
+| `422` | Missing, empty, or invalid `query`, or invalid `page`. Laravel rejects the request before calling TMDB. | Show the relevant field message from `errors.query` or `errors.page`. |
+| `502` | TMDB request fails because of a connection error, timeout, unexpected upstream status other than `429`, or an unusable response. | Show that movie search is temporarily unavailable and offer a manual retry. |
+| `503` | TMDB returns `429` because the application's shared upstream access has been throttled. | Show a temporary availability message. Wait for the `Retry-After` interval before offering a retry. |
+
+Use Laravel's standard JSON validation format for `422`. For example,
+`GET /api/v1/movies/search?page=1` returns:
+
+```json
+{
+  "message": "The query field is required.",
+  "errors": {
+    "query": ["The query field is required."]
+  }
+}
+```
+
+Example `502` response:
+
+```json
+{
+  "message": "Movie search is temporarily unavailable.",
+  "code": "MOVIE_SEARCH_UNAVAILABLE"
+}
+```
+
+Example response when TMDB returns `429`:
+
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+Retry-After: 30
+```
+
+```json
+{
+  "message": "Movie search is busy. Please try again shortly.",
+  "code": "MOVIE_SEARCH_RATE_LIMITED"
+}
+```
+
+For an upstream `429`, use TMDB's `Retry-After` when it can be converted
+to a positive delay in seconds. Otherwise use `30` seconds. Send the
+delay as the Laravel response's `Retry-After` header. Avoid immediate
+automatic retries. Keep provider response bodies, credentials, and
+internal exception details out of the client response. Handle missing
+server configuration as an internal `500` error.
+
+## Implementation handoff
+
+- Register `/movies/search` inside the existing `v1` route group, outside
+  the `auth:sanctum` group. When the movie details route is added, constrain
+  its ID parameter to digits so it cannot capture `/movies/search`.
+- Validate and normalize the request before calling TMDB. Map successful
+  TMDB results to the documented `data` and `meta` fields.
+- The current `TmdbService` throws a generic exception for failed HTTP
+  responses. Preserve the upstream status and `Retry-After` in the
+  implementation so the search endpoint can distinguish `429` from
+  other failures.
+- Use the existing Axios client. Its base URL already ends in `/api`,
+  so request `/v1/movies/search` relative to that base.
+
+```js
+import api from './api';
+
+export async function searchMovies(query, page = 1) {
+    const response = await api.get('/v1/movies/search', {
+        params: { query, page },
+    });
+
+    return response.data;
+}
+```
+
+Axios encodes the parameters. React should handle loading, results, an
+empty result, validation errors, and temporary failures as distinct states.
+
+## Acceptance checks for implementation
+
+1. A guest can search without a session. Omitting `page` requests page
+   `1`, and supplying `page=2` requests the second page.
+2. Missing, blank, array, or overlong queries return `422` without a
+   TMDB call. Invalid pages such as `0`, `1.5`, and `501` also return `422`.
+3. A successful response contains the documented movie fields and
+   pagination metadata. Missing posters, dates, and ratings use `null`.
+4. No matches returns `200` with `data: []` and zero totals. A valid page
+   beyond the result set returns an empty page with the existing totals.
+5. A mocked TMDB `429` returns `503` with `Retry-After`. Other provider
+   failures return the documented `502` response.
