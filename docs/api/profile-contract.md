@@ -127,3 +127,136 @@ addition to the field rules above. Check key presence rather than
 whether a value is filled, so `{"bio": null}` is accepted. Keep the
 database's unique email index. If a concurrent update hits that index,
 return the same email validation error as a duplicate detected earlier.
+
+
+
+## Profile API
+
+| Method and path | Access | Success |
+| --- | --- | --- |
+| `GET /api/v1/me/profile` | Signed in with `auth:sanctum` | `200` with the current user's profile |
+| `PATCH /api/v1/me/profile` | Signed in with `auth:sanctum` and valid CSRF protection | `200` with the complete updated profile |
+
+Use `/api/v1/me` for authentication state and `/api/v1/me/profile`
+for the profile editor. The profile endpoints are private to the
+account owner. A future public profile needs a separate response
+that excludes the account's email.
+
+Send `Accept: application/json` on both requests and
+`Content-Type: application/json` on `PATCH`. Use the session cookie
+and CSRF header defined in the [authentication API contract](auth-contract.md).
+
+### Update request
+
+`PATCH` accepts `name`, `email`, `bio`, and the request-only
+`current_password` field. Include at least one editable field.
+Omitted fields retain their current values. An explicit `null` is
+valid for `bio` and invalid for `name` or `email`.
+
+Update a name and bio:
+
+```json
+{
+  "name": "Sam Example",
+  "bio": "I like science fiction and classic mysteries."
+}
+```
+
+Clear the bio:
+
+```json
+{
+  "bio": null
+}
+```
+
+Updating favourite genres:
+
+```json
+{
+  "favorite_genres": ["science-fiction", "mystery"]
+}
+```
+
+```json
+{
+  "favorite_genres": []
+}
+```
+
+Change the email used for sign-in:
+
+```json
+{
+  "email": "sam.new@example.com",
+  "current_password": "example passphrase"
+}
+```
+
+### Success response
+
+Both endpoints return the full profile. Always include `bio`, using
+`null` when it is empty.
+
+```json
+{
+  "data": {
+    "id": 42,
+    "name": "Sam Example",
+    "email": "sam@example.com",
+    "bio": "I like classic mysteries.",
+    "favorite_genres": ["science-fiction", "mystery"]
+  }
+}
+```
+
+### Error responses
+
+| Status | When |
+| --- | --- |
+| `401` | The request has no authenticated session. |
+| `419` | A `PATCH` request has a missing, invalid, or expired CSRF token. This check may fail before authentication is evaluated. |
+| `422` | An editable field is invalid, the email is already in use, password confirmation fails, a protected or unknown key is present, or the body contains no editable fields. |
+
+Use Laravel's JSON validation format for `422`:
+
+```json
+{
+  "message": "The email has already been taken.",
+  "errors": {
+    "email": ["The email has already been taken."]
+  }
+}
+```
+
+Use `errors.current_password` for missing or incorrect confirmation.
+Use the submitted key for a protected or unknown field, such as
+`errors.role`. Use `errors.profile` for a request with no editable
+fields. The frontend uses status codes and error keys to decide what
+to show. Display `bio` as plain text.
+Use `errors.favorite_genres` for an invalid list or too many selections.
+Use indexed keys such as `errors["favorite_genres.0"]` for an invalid or
+duplicate genre. The frontend can display these messages under the genre
+selector.
+
+### Acceptance checks for implementation
+
+1. A signed-in user can read their own profile. A guest receives `401`
+   when authentication is evaluated.
+2. A name-only update preserves email and bio. `{"bio": null}` clears
+   the bio. Empty or overlong names and overlong bios return `422`.
+3. A valid email change requires the correct current password and
+   clears the old verification state. An invalid or duplicate address
+   returns `422`. Sending the same normalized email does not require
+   password confirmation.
+4. An update containing a protected key such as `id`, `role`, or
+   `permissions` returns `422` and saves none of the submitted changes.
+   This also applies when the protected key's value is `null`.
+5. A request with no editable fields returns `422`. A `PATCH` without
+   valid CSRF protection returns `419`.
+   - An account without genre preferences returns `"favorite_genres": []`.
+6. A genre-only update replaces the selection and preserves the name,
+   email, and bio. Omitting the field preserves the selection, and
+   sending `[]` clears it.
+7. Unknown or duplicate genres, a non-list value, `null`, or more than
+   five selections return `422` and save none of the update.
