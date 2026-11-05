@@ -6,3 +6,5 @@
 - `meetings/`: sprint planning, reviews, and retrospectives.
 
 Record decisions as the team makes them. Avoid documenting unconfirmed assumptions as final decisions.
+
+- [Authentication API contract (AB#18)](api/auth-contract.md)
