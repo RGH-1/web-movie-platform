@@ -53,14 +53,14 @@ Use the authenticated user to identify the record to update. The
 client cannot select another user through a URL parameter, query
 parameter, or request body.
 
-The only editable profile fields are `name`, `email`, and `bio`.
+The only editable profile fields are `name`, `email`, `bio`, and `favorite_genres`.
 Treat `id`, roles, permissions, `email_verified_at`, `remember_token`,
 `created_at`, and `updated_at` as system-managed. Handle password
 changes in a separate account flow.
 
 Reject protected and unknown keys in the update body, including keys
 whose values are `null`. Persist only the validated `name`, `email`,
-and `bio` fields. The `current_password` field is a request-only
+`bio`, and `favorite_genres` fields. The `current_password` field is a request-only
 credential. Never persist, log, or return it.
 
 When the normalized email changes, verify `current_password` against
@@ -148,7 +148,7 @@ and CSRF header defined in the [authentication API contract](auth-contract.md).
 
 ### Update request
 
-`PATCH` accepts `name`, `email`, `bio`, and the request-only
+`PATCH` accepts `name`, `email`, `bio`, `favorite_genres`, and the request-only
 `current_password` field. Include at least one editable field.
 Omitted fields retain their current values. An explicit `null` is
 valid for `bio` and invalid for `name` or `email`.
@@ -260,3 +260,23 @@ selector.
    sending `[]` clears it.
 7. Unknown or duplicate genres, a non-list value, `null`, or more than
    five selections return `422` and save none of the update.
+## Profile endpoint verification (AB#32)
+
+Run from backend:
+
+    php artisan test --filter=ProfileTest
+    php artisan test
+
+ProfileTest uses RefreshDatabase and the in-memory SQLite database in
+phpunit.xml. It covers retrieval, partial updates, genre selection,
+normalization, invalid input, protected fields, email-change password
+confirmation, authentication, and CSRF enforcement.
+
+The new migration adds bio and favorite_genres to users. After reviewing
+this change, run php artisan migrate against your configured development
+database before manually using the endpoints. This migration has not
+been applied to the local development database during implementation.
+
+The endpoints return only id, name, email, bio, and favorite_genres.
+They always select the authenticated account. Profile completion
+ enforcement remains a separate task (AB#33).

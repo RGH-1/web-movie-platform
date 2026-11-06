@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
@@ -22,6 +23,7 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
-        //Other protected routes that require authentication can be added here
+        Route::get('/me/profile', [ProfileController::class, 'show']);
+        Route::patch('/me/profile', [ProfileController::class, 'update']);
     });
 });
