@@ -7,7 +7,7 @@ Status: Proposed for team review
 
 `GET /api/v1/movies/search`
 
-Movie search is public. It accepts query parameters and returns JSON.
+Movie search requires authentication and a complete profile under the updated product flow (AB#33). It accepts query parameters and returns JSON.
 Send `Accept: application/json`. React calls Laravel, and Laravel calls
 TMDB's `/search/movie` through `TmdbService`. The TMDB credential stays
 on the backend.
@@ -113,6 +113,8 @@ page has no results.
 
 | HTTP status | Condition | Frontend behavior |
 | --- | --- | --- |
+| `401` | No authenticated session. | Ask the user to sign in. |
+| `403` | Incomplete profile; code PROFILE_INCOMPLETE. | Guide the user to profile editing. |
 | `422` | Missing, empty, or invalid `query`, or invalid `page`. Laravel rejects the request before calling TMDB. | Show the relevant field message from `errors.query` or `errors.page`. |
 | `502` | TMDB request fails because of a connection error, timeout, unexpected upstream status other than `429`, or an unusable response. | Show that movie search is temporarily unavailable and offer a manual retry. |
 | `503` | TMDB returns `429` because the application's shared upstream access has been throttled. | Show a temporary availability message. Wait for the `Retry-After` interval before offering a retry. |
@@ -162,8 +164,7 @@ server configuration as an internal `500` error.
 
 ## Implementation handoff
 
-- Register `/movies/search` inside the existing `v1` route group, outside
-  the `auth:sanctum` group. When the movie details route is added, constrain
+- Register `/movies/search` inside the existing `v1` route group, inside a group using both `auth:sanctum` and `profile.complete`. When the movie details route is added, constrain
   its ID parameter to digits so it cannot capture `/movies/search`.
 - Validate and normalize the request before calling TMDB. Map successful
   TMDB results to the documented `data` and `meta` fields.
@@ -191,7 +192,7 @@ empty result, validation errors, and temporary failures as distinct states.
 
 ## Acceptance checks for implementation
 
-1. A guest can search without a session. Omitting `page` requests page
+1. A guest receives JSON 401; an authenticated incomplete account receives 403 with code PROFILE_INCOMPLETE. A signed-in account with a complete profile can search. Omitting `page` requests page
    `1`, and supplying `page=2` requests the second page.
 2. Missing, blank, array, or overlong queries return `422` without a
    TMDB call. Invalid pages such as `0`, `1.5`, and `501` also return `422`.
