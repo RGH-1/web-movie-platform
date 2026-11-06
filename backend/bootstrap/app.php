@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureProfileIsComplete;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,11 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->alias([
+            'profile.complete' => EnsureProfileIsComplete::class,
+        ]);
         $middleware->trimStrings(except: ['current_password']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request, \Throwable $exception): bool =>
-                $request->is('api/v1/*') || $request->expectsJson()
+            fn (Request $request, Throwable $exception): bool => $request->is('api/v1/*') || $request->expectsJson()
         );
     })->create();

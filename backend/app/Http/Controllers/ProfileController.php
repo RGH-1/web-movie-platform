@@ -49,6 +49,8 @@ class ProfileController extends Controller
 
     private function profileResponse(User $user): JsonResponse
     {
+        $incompleteFields = $user->incompleteProfileFields();
+
         return response()->json([
             'data' => [
                 'id' => (int) $user->id,
@@ -56,6 +58,10 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'bio' => $user->bio,
                 'favorite_genres' => $user->favorite_genres ?? [],
+            ],
+            'meta' => [
+                'profile_complete' => $incompleteFields === [],
+                'incomplete_fields' => $incompleteFields,
             ],
         ]);
     }
