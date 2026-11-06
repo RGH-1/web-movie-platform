@@ -28,7 +28,7 @@ class ProfileTest extends TestCase
             ->assertOk()->assertExactJson(['data' => [
                 'id' => $user->id, 'name' => $user->name,
                 'email' => $user->email, 'bio' => null, 'favorite_genres' => [],
-            ]]);
+            ], 'meta' => ['profile_complete' => true, 'incomplete_fields' => []]]);
     }
 
     public function test_updates_normalize_fields_and_preserve_omitted_values(): void

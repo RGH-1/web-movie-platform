@@ -6,7 +6,7 @@ Status: Sprint 2 proposal for team review. The routes and configuration below de
 
 The first-party React app uses Laravel Sanctum's SPA authentication with the `web` session guard. Laravel sets an HttpOnly session cookie and provides a separate `XSRF-TOKEN` cookie for CSRF protection. The browser sends the cookies on requests to Laravel. React keeps only the public user fields in memory and restores the user through `GET /api/v1/me` on page load. The API issues no bearer token to this client.
 
-Version new application endpoints under `/api/v1`. Keep `/api/health` and the existing TMDB integration endpoint at their current URLs and accessible without login. Public movie discovery should also be accessible without login.
+Version new application endpoints under `/api/v1`. Keep `/api/health` and the existing TMDB integration endpoint at their current URLs and accessible without login. Movie browsing requires a signed-in account under the updated product flow. Apply auth:sanctum and profile.complete to production movie routes; see profile-contract.md. The health and temporary diagnostic exceptions remain public.
 
 ## Endpoints
 

@@ -280,3 +280,77 @@ been applied to the local development database during implementation.
 The endpoints return only id, name, email, bio, and favorite_genres.
 They always select the authenticated account. Profile completion
  enforcement remains a separate task (AB#33).
+
+## Profile completion (AB#33)
+
+A profile is complete when its trimmed name is a nonempty string of at
+most 255 characters and its email is a valid RFC address of at most
+255 characters. Bio, favorite genres, and email verification are not
+completion requirements. New accounts with valid registration data
+normally pass immediately.
+
+GET and PATCH /api/v1/me/profile keep the existing data object and add:
+
+```json
+{
+  "meta": {
+    "profile_complete": false,
+    "incomplete_fields": ["name"]
+  }
+}
+```
+
+Both values are computed from the current account. They cannot be set by
+the client and are recalculated after an update. A complete profile has
+profile_complete: true and incomplete_fields: [].
+
+### Applying the requirement
+
+Apply authentication first and the registered profile.complete alias
+second, only to application features that require completion:
+
+```php
+Route::middleware(['auth:sanctum', 'profile.complete'])->group(function () {
+    // Register movie browsing and other restricted application routes here.
+});
+```
+
+For an unauthenticated request, return 401. An authenticated user with an
+incomplete profile receives 403 with this stable response:
+
+```json
+{
+  "message": "Complete your profile before accessing this feature.",
+  "code": "PROFILE_INCOMPLETE",
+  "incomplete_fields": ["name"]
+}
+```
+
+The frontend should use the code and field list to guide the user to
+profile editing. This response is different from 401 (sign-in needed)
+and 422 (invalid submitted update).
+
+Do not put profile retrieval/update, login, registration, logout, or
+authentication-state restoration behind profile.complete. Incomplete
+accounts must be able to sign in, inspect and repair their profile, and
+sign out. Keep operational health and the temporary TMDB diagnostic
+endpoint outside this requirement.
+
+The updated product flow requires an account for movie browsing.
+The production movie endpoints have not yet been implemented in this
+branch. Their owners must attach auth:sanctum and profile.complete when
+adding them; registering this alias alone does not secure a route.
+No production movie route or frontend access guard is added by AB#33.
+
+### Verification
+
+Run from backend:
+
+    php artisan test --filter=ProfileCompletionTest
+    php artisan test
+
+Completion tests use the isolated SQLite test database and test-only
+feature routes. They verify required-field validation, optional-field
+independence, guest rejection, incomplete-profile rejection, profile
+repair and immediate access recovery, client override rejection, and
+continued access to public health/diagnostic endpoints.

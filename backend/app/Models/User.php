@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Validator;
 
 class User extends Authenticatable
 {
@@ -35,10 +36,25 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Required account fields only; optional preferences never gate access.
+     * This is computed from current values rather than a stored status flag.
      *
-     * @return array<string, string>
+     * @return list<string>
      */
+    public function incompleteProfileFields(): array
+    {
+        $validator = Validator::make([
+            'name' => is_string($this->name) ? trim($this->name) : $this->name,
+            'email' => is_string($this->email) ? trim($this->email) : $this->email,
+        ], [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['bail', 'required', 'string', 'max:255', 'email:rfc'],
+        ]);
+
+        return array_keys($validator->errors()->toArray());
+    }
+
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [
