@@ -97,3 +97,121 @@ React can hide the trailer player when `trailer` is `null`, display an
 image placeholder when a URL is `null`, and hide a cast or genres
 section when its list is empty. A movie with missing optional
 information still returns `200`.
+
+
+## Error responses
+
+| HTTP status | Condition | Frontend behavior |
+| --- | --- | --- |
+| `404` | A numeric ID passes validation but TMDB confirms the movie does not exist. A nonnumeric path segment also returns a routing `404`. | Show the movie-not-found state. Handle either `404` by status. |
+| `422` | The numeric path segment is zero or outside the supported ID range. Laravel rejects it before calling TMDB. | Show an invalid movie link message. |
+| `502` | TMDB connection or timeout failure, an unexpected upstream response, or an unusable movie payload. | Show that details are temporarily unavailable and offer a retry. |
+| `503` | TMDB returns `429` for the application's shared upstream access. | Wait for `Retry-After` before offering a retry. |
+| `500` | Required server configuration is missing. | Show a generic error. |
+
+Example `404` for a movie that does not exist:
+
+```json
+{
+  "message": "Movie not found.",
+  "code": "MOVIE_NOT_FOUND"
+}
+```
+
+A nonnumeric segment is rejected by the router and may use Laravel's
+default `404` body.
+
+Example `422` for `GET /api/v1/movies/0`:
+
+```json
+{
+  "message": "The TMDB ID must be a positive integer in the supported range.",
+  "errors": {
+    "tmdbId": ["The TMDB ID must be a positive integer in the supported range."]
+  }
+}
+```
+
+Example `502`:
+
+```json
+{
+  "message": "Movie details are temporarily unavailable.",
+  "code": "MOVIE_DETAILS_UNAVAILABLE"
+}
+```
+
+Example `503` for an upstream `429`. The response includes
+`Retry-After: 30` if there is no usable upstream retry interval.
+
+```json
+{
+  "message": "Movie details are busy. Please try again shortly.",
+  "code": "MOVIE_DETAILS_RATE_LIMITED"
+}
+```
+
+Use the same retry policy as movie search. Convert a usable upstream
+`Retry-After` to a positive delay in seconds. Otherwise use 30 seconds.
+Avoid immediate automatic retries. Keep TMDB credentials, raw upstream
+error bodies, and internal exception details out of client responses.
+
+## Implementation handoff
+
+- Register `/movies/{tmdbId}` in the existing `v1` route group, outside
+  `auth:sanctum`. Use `whereNumber('tmdbId')` so the details route cannot
+  capture `/movies/search`.
+- Validate the route value, rather than a query-string field named
+  `tmdbId`. A Form Request can take the value from
+  `$this->route('tmdbId')` and apply `required`, `integer`, and
+  `between:1,2147483647`.
+- Call the existing `TmdbService` with the validated ID. Use
+  `language=en-US` to match search. Append `credits` and `videos`
+  to retrieve the three parts in one TMDB request.
+
+```php
+$response = $tmdbService->get("/movie/{$tmdbId}", [
+    'language' => 'en-US',
+    'append_to_response' => 'credits,videos',
+]);
+```
+
+- Coordinate upstream error handling with the search developer. The
+  current service collapses unsuccessful HTTP responses into a generic
+  exception. Preserve the upstream status and `Retry-After` so the
+  details endpoint can distinguish a confirmed missing movie and
+  throttling from other failures.
+- Map the result to this contract. A missing or mismatched movie ID or
+  a missing title makes the base payload unusable and returns `502`.
+  A usable base movie with missing credits, videos, or optional
+  metadata uses the documented empty values.
+- Use the existing Axios client. Its base URL includes `/api`, so the
+  request path begins with `/v1`. Pass the selected search result's
+  `tmdb_id` to the details page.
+
+```js
+import api from './api';
+
+export async function getMovieDetails(tmdbId) {
+    const response = await api.get(
+        `/v1/movies/${encodeURIComponent(tmdbId)}`,
+    );
+
+    return response.data.data;
+}
+```
+
+## Acceptance checks for implementation
+
+1. A guest can open a movie from search using its `tmdb_id` and get
+   `200` with the documented fields and types.
+2. Missing optional fields produce `null` or `[]` as specified.
+   A movie without a playable trailer still returns `200`.
+3. `movies/search` reaches the search route. Nonnumeric paths return
+   `404`, and numeric IDs outside the supported range return `422`.
+   Neither invalid request calls TMDB.
+4. A confirmed upstream movie `404` produces `MOVIE_NOT_FOUND`.
+   A timeout or unusable base payload produces `502`. An upstream
+   `429` produces `503` with `Retry-After`.
+5. Responses contain no TMDB credentials or raw upstream errors.
+   The frontend can render loading, loaded, not-found, and retry states.
