@@ -1,24 +1,65 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import { searchMovies } from '../services/movies';
 
+const STORAGE_KEY = 'movieDiscoveryState';
+
+function getSavedState() {
+    try {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+
+        if (saved) {
+            const state = JSON.parse(saved);
+
+            if (
+                state &&
+                typeof state.query === 'string' &&
+                typeof state.submittedQuery === 'string' &&
+                Array.isArray(state.movies) &&
+                Number.isInteger(state.page) &&
+                state.page >= 1
+            ) {
+                return state;
+            }
+        }
+    } catch {
+        // Ignore invalid or unavailable session storage.
+    }
+
+    return null;
+}
+
 function MovieDiscovery() {
-    const [query, setQuery] = useState('');
-    const [submittedQuery, setSubmittedQuery] = useState('');
-    const [movies, setMovies] = useState([]);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalResults, setTotalResults] = useState(0);
+    const initialState = useRef(undefined);
+
+    if (initialState.current === undefined) {
+        initialState.current = getSavedState();
+    }
+
+    const saved = initialState.current;
+
+    const [query, setQuery] = useState(saved?.query ?? '');
+    const [submittedQuery, setSubmittedQuery] = useState(saved?.submittedQuery ?? '');
+    const [movies, setMovies] = useState(saved?.movies ?? []);
+    const [page, setPage] = useState(saved?.page ?? 1);
+    const [totalPages, setTotalPages] = useState(saved?.totalPages ?? 0);
+    const [totalResults, setTotalResults] = useState(saved?.totalResults ?? 0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [validationError, setValidationError] = useState('');
-    const [hasSearched, setHasSearched] = useState(false);
+    const [hasSearched, setHasSearched] = useState(saved?.hasSearched ?? false);
 
     const requestId = useRef(0);
     const pendingRequest = useRef(null);
-    const displayedResults = useRef(null);
+    const displayedResults = useRef(
+        saved?.hasSearched
+            ? {
+                query: saved.submittedQuery,
+                page: saved.page,
+            }
+            : null
+    );
 
     useEffect(() => {
         return () => {
@@ -26,6 +67,33 @@ function MovieDiscovery() {
             pendingRequest.current = null;
         };
     }, []);
+
+    useEffect(() => {
+        try {
+            sessionStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                    query,
+                    submittedQuery,
+                    movies,
+                    page,
+                    totalPages,
+                    totalResults,
+                    hasSearched,
+                })
+            );
+        } catch {
+            // Search still works if session storage is unavailable.
+        }
+    }, [
+        query,
+        submittedQuery,
+        movies,
+        page,
+        totalPages,
+        totalResults,
+        hasSearched,
+    ]);
 
     async function performSearch(searchQuery, requestedPage = 1) {
         const requestKey = JSON.stringify([searchQuery, requestedPage]);
