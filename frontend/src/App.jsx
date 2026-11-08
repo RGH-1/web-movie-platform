@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import ProfilePage from './pages/ProfilePage';
 import MovieDiscovery from './pages/MovieDiscovery';
+import MovieDetailNavigation from './pages/MovieDetailNavigation';
 
 import { useAuth } from './hooks/useAuth';
 
@@ -64,6 +65,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/movies" element={<MovieDiscovery />} />
+                <Route path="/movies/:tmdbId" element={<MovieDetailNavigation />} />
             </Route>
 
             <Route
@@ -131,7 +133,6 @@ function AuthControls() {
                     >
                         Log in
                     </Link>
-
                     <Link
                         to="/register"
                         className="btn btn-outline-primary"

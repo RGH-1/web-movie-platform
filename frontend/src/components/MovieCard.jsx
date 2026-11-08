@@ -1,7 +1,13 @@
+
+import { Link } from 'react-router-dom';
+
 function MovieCard({ movie }) {
     const releaseYear = movie.release_date
         ? movie.release_date.slice(0, 4)
         : 'Unknown year';
+
+    const movieId = Number(movie.tmdb_id);
+    const hasValidId = Number.isSafeInteger(movieId) && movieId > 0;
 
     return (
         <article className="card h-100 shadow-sm">
@@ -27,7 +33,7 @@ function MovieCard({ movie }) {
                 </div>
             )}
 
-            <div className="card-body text-start">
+            <div className="card-body text-start d-flex flex-column">
                 <h2 className="card-title fs-5 mb-2">
                     {movie.title}
                 </h2>
@@ -39,6 +45,26 @@ function MovieCard({ movie }) {
                 <p className="card-text">
                     {movie.overview?.trim() || 'No overview available.'}
                 </p>
+
+                <div className="mt-auto pt-3">
+                    {hasValidId ? (
+                        <Link
+                            to={`/movies/${movieId}`}
+                            className="btn btn-primary w-100"
+                            aria-label={`View details for ${movie.title}`}
+                        >
+                            View Details
+                        </Link>
+                    ) : (
+                        <button
+                            type="button"
+                            className="btn btn-secondary w-100"
+                            disabled
+                        >
+                            Details unavailable
+                        </button>
+                    )}
+                </div>
             </div>
         </article>
     );
