@@ -25,18 +25,21 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('/register', [RegistrationController::class, 'register'])->middleware(RejectAuthenticatedRegistration::class);
         Route::post('/login', [AuthSessionController::class, 'login'])->middleware('throttle:login');
-        Route::post('/logout', [AuthSessionController::class, 'logout'])->middleware('auth:sanctum');
     });
 
 
+    // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout', [AuthSessionController::class, 'logout']);
+
         Route::get('/me', [AuthSessionController::class, 'me']);
         Route::get('/me/profile', [ProfileController::class, 'show']);
         Route::patch('/me/profile', [ProfileController::class, 'update']);
 
-        // AB#41 - Laravel movie search endpoint
-        Route::get('/movies/search', [MovieSearchController::class, 'search'])
-            ->middleware('profile.complete');
-
+        // Application features that also require a complete profile.
+        Route::middleware('profile.complete')->group(function () {
+            // AB#41 - Laravel movie search endpoint
+            Route::get('/movies/search', [MovieSearchController::class, 'search']);
+        });
     });
 });
