@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ProfilePage from "./pages/ProfilePage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ProfileCompletionNotice from "./components/ProfileCompletionNotice";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -17,6 +18,7 @@ import "./App.css";
 // Development homepage
 function Home() {
     const location = useLocation();
+    const { isAuthenticated, profileCompletion } = useAuth();
 
     const successMessage =
         location.state?.registrationSuccess || location.state?.loginSuccess;
@@ -32,6 +34,7 @@ function Home() {
                 </div>
             )}
 
+            {isAuthenticated && <ProfileCompletionNotice completion={profileCompletion} />}
             <AuthControls />
             <ApiHealthCheck />
             <TmdbIntegrationTest />
