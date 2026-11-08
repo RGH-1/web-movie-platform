@@ -6,6 +6,7 @@ use App\Http\Requests\MovieSearchRequest;
 use App\Services\TmdbService;
 use Illuminate\Http\JsonResponse;
 use RuntimeException;
+use App\Exceptions\TmdbRequestException;
 
 class MovieSearchController extends Controller
 {
@@ -77,16 +78,18 @@ class MovieSearchController extends Controller
             ], 200);
 
         } catch (RuntimeException $exception) {
-            if ($exception->getCode() === 429) {
-                $retryAfter = 30;
+            if (
+                $exception instanceof TmdbRequestException
+                && $exception->upstreamStatus === 429
+            ) {
+                $retryAfter = filter_var(
+                    $exception->retryAfter,
+                    FILTER_VALIDATE_INT
+                );
 
-                if (preg_match(
-                    '/^TMDB_RATE_LIMITED:(\d+)$/',
-                    $exception->getMessage(),
-                    $matches
-                )) {
-                    $retryAfter = max(1, (int) $matches[1]);
-                }
+                $retryAfter = $retryAfter !== false && $retryAfter > 0
+                    ? $retryAfter
+                    : 30;
 
                 return response()->json([
                     'message' => 'Movie search is temporarily rate limited.',
