@@ -42,14 +42,6 @@ function Home() {
             {isAuthenticated && <ProfileCompletionNotice completion={profileCompletion} />}
 
             <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
-                <Link to="/register" className="btn btn-primary">
-                    Create an account
-                </Link>
-
-                <Link to="/login" className="btn btn-outline-primary">
-                    Log in
-                </Link>
-
                 <Link to="/movies" className="btn btn-outline-primary">
                     Discover Movies
                 </Link>
