@@ -179,3 +179,73 @@ export async function logout() {
 6. While signed in, attempt registration or login with valid CSRF. Confirm `409` and verify `/me` still returns the original user.
 
 References: [Laravel 12 Sanctum SPA authentication](https://laravel.com/docs/12.x/sanctum#spa-authentication), [Laravel 12 authentication](https://laravel.com/docs/12.x/authentication), [Laravel 12 JSON validation errors](https://laravel.com/docs/12.x/validation#validation-error-response-format).
+
+
+
+## Authenticated-user endpoint implementation — AB#22
+
+`GET /api/v1/me` returns the user associated with the current session.
+The route uses `auth:sanctum` and is accessible to signed-in accounts
+whose profiles are incomplete.
+
+Send `Accept: application/json` and the session cookie. This GET request
+takes no body and does not require a CSRF token.
+
+Successful response, `200`:
+
+```json
+{
+  "data": {
+    "id": 42,
+    "name": "Sam Example",
+    "email": "sam@example.com"
+  }
+}
+```
+
+The response explicitly selects `id`, `name`, and `email`. The profile
+editor uses `/api/v1/me/profile` for the extended profile information.
+
+Without a valid authenticated session, return `401`:
+
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+The user is resolved from the request's authentication context. Query
+parameters such as `id` or `user_id` cannot select another account.
+
+### Frontend integration
+
+The shared Axios client already sends credentials. On application startup,
+request `/v1/me` relative to its `/api` base URL. Store the returned user
+in the frontend's authentication state.
+
+```js
+const response = await api.get('/v1/me');
+const user = response.data.data;
+```
+
+A `401` means the frontend should use its signed-out state. Other failures,
+such as a network error or `500`, should be handled as an inability to
+check the session.
+
+### Verification
+
+From `backend`, run:
+
+```bash
+php artisan test --filter=AuthenticatedUserTest
+php artisan test
+```
+
+The dedicated tests cover the exact response fields, guest rejection,
+account ownership, incomplete-profile access, and session access before
+and after logout.
+
+For a manual check, sign in through the React login page, then use the
+same browser session to request `/api/v1/me`. Expect `200` and the
+signed-in user's fields. A request from a private browser window with
+no session should receive `401`.
