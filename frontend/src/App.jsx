@@ -65,6 +65,9 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+            </Route>
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
@@ -112,6 +115,9 @@ function AuthControls() {
             {isAuthenticated ? (
                 <>
                     <p>Logged in as {user.name}</p>
+                    <Link to="/profile" className="btn btn-outline-primary me-2">
+                        My profile
+                    </Link>
 
                     <Link
                         to="/profile"
