@@ -49,6 +49,22 @@ class TmdbService
             );
         }
 
+        if ($response->status() === 429) {
+            $retryAfter = filter_var(
+                $response->header('Retry-After'),
+                FILTER_VALIDATE_INT
+            );
+
+            throw new RuntimeException(
+                'TMDB_RATE_LIMITED:' . (
+                $retryAfter !== false && $retryAfter > 0
+                    ? $retryAfter
+                    : 30
+                ),
+                429
+            );
+        }
+
         if ($response->failed()) {
             throw new RuntimeException(
                 'The movie information service returned an error.'
