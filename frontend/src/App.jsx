@@ -5,6 +5,8 @@ import TmdbIntegrationTest from "./components/TmdbIntegrationTest";
 
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import ProfilePage from "./pages/ProfilePage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -43,6 +45,9 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+            </Route>
 
             <Route
                 path="*"
@@ -85,6 +90,9 @@ function AuthControls() {
             {isAuthenticated ? (
                 <>
                     <p>Logged in as {user.name}</p>
+                    <Link to="/profile" className="btn btn-outline-primary me-2">
+                        My profile
+                    </Link>
 
                     <button
                         type="button"
