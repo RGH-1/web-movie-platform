@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 
 // Validate login fields before calling Laravel.
 function validateForm(form) {
@@ -41,6 +41,7 @@ function Login() {
         password: '',
     });
 
+    const { signIn } = useAuth();
     const [errors, setErrors] = useState({});
     const [generalError, setGeneralError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -80,7 +81,7 @@ function Login() {
         setLoading(true);
 
         try {
-            const user = await loginUser(
+            const user = await signIn(
                 form.email.trim().toLowerCase(),
                 form.password
             );
