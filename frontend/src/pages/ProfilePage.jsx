@@ -1,16 +1,28 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getProfile } from '../services/profile';
 import ProfileEditForm from '../components/ProfileEditForm';
 import { useAuth } from '../hooks/useAuth';
 import { GENRES } from '../utils/profileForm';
+import ProfileCompletionNotice from '../components/ProfileCompletionNotice';
 
 
 
 export default function ProfilePage() {
   const location = useLocation();
-  const { setUser } = useAuth();
-  const [editing, setEditing] = useState(false);
+  const { setUser, profileCompletion } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [editRequested, setEditRequested] = useState(false);
+  const editing = editRequested || searchParams.get('edit') === '1';
+
+  function setEditing(value) {
+    setEditRequested(value);
+    if (!value && searchParams.has('edit')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('edit');
+      setSearchParams(next, { replace: true });
+    }
+  }
   const [success, setSuccess] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState({ status: 'loading', profile: null });
@@ -87,6 +99,14 @@ export default function ProfilePage() {
                 Try again
               </button>
             </div>
+          )}
+
+          {state.status === 'ready' && (
+            <ProfileCompletionNotice
+              completion={profileCompletion}
+              showAction={!editing}
+              onEdit={editing ? undefined : () => { setSuccess(''); setEditing(true); }}
+            />
           )}
 
           {success && <p className="alert alert-success" role="status">{success}</p>}

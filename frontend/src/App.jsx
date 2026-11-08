@@ -5,6 +5,7 @@ import { Link, Route, Routes, useLocation } from 'react-router-dom';
 import ApiHealthCheck from './components/ApiHealthCheck';
 import TmdbIntegrationTest from './components/TmdbIntegrationTest';
 import ProtectedRoute from './components/ProtectedRoute';
+import ProfileCompletionNotice from './components/ProfileCompletionNotice';
 
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -18,6 +19,7 @@ import './App.css';
 // Development homepage
 function Home() {
     const location = useLocation();
+    const { isAuthenticated, profileCompletion } = useAuth();
 
     const successMessage =
         location.state?.registrationSuccess ||
@@ -36,6 +38,8 @@ function Home() {
                     {successMessage}
                 </div>
             )}
+
+            {isAuthenticated && <ProfileCompletionNotice completion={profileCompletion} />}
 
             <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
                 <Link to="/register" className="btn btn-primary">
@@ -65,10 +69,6 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute />}>
-                <Route path="/profile" element={<ProfilePage />} />
-            </Route>
-
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/movies" element={<MovieDiscovery />} />
@@ -115,10 +115,6 @@ function AuthControls() {
             {isAuthenticated ? (
                 <>
                     <p>Logged in as {user.name}</p>
-                    <Link to="/profile" className="btn btn-outline-primary me-2">
-                        My profile
-                    </Link>
-
                     <Link
                         to="/profile"
                         className="btn btn-outline-primary me-2"
