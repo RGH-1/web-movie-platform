@@ -42,3 +42,10 @@ export async function getCurrentUser() {
 
     return response.data.data;
 }
+
+
+export async function logoutUser() {
+    await api.get(csrfUrl);
+
+    await api.post('/v1/auth/logout');
+}

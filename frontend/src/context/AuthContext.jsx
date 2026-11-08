@@ -1,11 +1,11 @@
-
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from "react";
 import {
     getCurrentUser,
     loginUser,
-    registerUser
-} from '../services/auth';
-import api from '../services/api';
+    registerUser,
+    logoutUser,
+} from "../services/auth";
+import api from "../services/api";
 
 export const AuthContext = createContext(null);
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
                     setUser(null);
 
                     if (error.response?.status !== 401) {
-                        console.error('Failed to load current user:', error);
+                        console.error("Failed to load current user:", error);
                     }
                 }
             } finally {
@@ -47,63 +47,69 @@ export function AuthProvider({ children }) {
         };
     }, []);
 
-useEffect(() => {
-    const interceptorId = api.interceptors.response.use(
-        (response) => response,
+    useEffect(() => {
+        const interceptorId = api.interceptors.response.use(
+            (response) => response,
 
-        (error) => {
-            const isUnauthorized = error.response?.status === 401;
+            (error) => {
+                const isUnauthorized = error.response?.status === 401;
 
-            const isLoginRequest =
-                error.config?.url?.includes('/v1/auth/login');
+                const isLoginRequest =
+                    error.config?.url?.includes("/v1/auth/login");
 
-            if (isUnauthorized && !isLoginRequest) {
-                setUser(null);
+                if (isUnauthorized && !isLoginRequest) {
+                    setUser(null);
+                }
+
+                return Promise.reject(error);
+            },
+        );
+
+        return () => {
+            api.interceptors.response.eject(interceptorId);
+        };
+    }, []);
+
+    async function signIn(email, password) {
+        const loggedInUser = await loginUser(email, password);
+
+        setUser(loggedInUser);
+
+        return loggedInUser;
+    }
+
+    async function signUp(formData) {
+        const registeredUser = await registerUser(formData);
+
+        setUser(registeredUser);
+
+        return registeredUser;
+    }
+
+    async function signOut() {
+        try {
+            await logoutUser();
+        } catch (error) {
+            if (error.response?.status !== 401) {
+                throw error;
             }
-
-            return Promise.reject(error);
         }
-    );
 
-    return () => {
-        api.interceptors.response.eject(interceptorId);
+        setUser(null);
+    }
+
+    const value = {
+        user,
+        setUser,
+        loading,
+        setLoading,
+        isAuthenticated,
+        signIn,
+        signUp,
+        signOut,
     };
-}, []);
-
-
-async function signIn(email, password) {
-    const loggedInUser = await loginUser(email, password);
-
-    setUser(loggedInUser);
-
-    return loggedInUser;
-}
-
-async function signUp(formData) {
-    const registeredUser = await registerUser(formData);
-
-    setUser(registeredUser);
-
-    return registeredUser;
-}
-
-
-
-const value = {
-    user,
-    setUser,
-    loading,
-    setLoading,
-    isAuthenticated,
-    signIn,
-    signUp
-
-};
-
 
     return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
+        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
     );
 }

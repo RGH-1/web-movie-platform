@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 // Validate login fields before calling Laravel.
 function validateForm(form) {
@@ -12,22 +11,22 @@ function validateForm(form) {
 
     // Email validation
     if (!email) {
-        errors.email = 'Email is required.';
+        errors.email = "Email is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.email = 'Enter a valid email address.';
+        errors.email = "Enter a valid email address.";
     } else if (email.length > 255) {
-        errors.email = 'Email cannot exceed 255 characters.';
+        errors.email = "Email cannot exceed 255 characters.";
     }
 
     // Password validation
     if (!password) {
-        errors.password = 'Password is required.';
+        errors.password = "Password is required.";
     } else if (
         new TextEncoder().encode(password).length > 72 ||
-        password.includes('\0')
+        password.includes("\0")
     ) {
         errors.password =
-            'Password must be at most 72 bytes and contain no NUL characters.';
+            "Password must be at most 72 bytes and contain no NUL characters.";
     }
 
     return errors;
@@ -35,15 +34,15 @@ function validateForm(form) {
 
 function Login() {
     const navigate = useNavigate();
-
+    const location = useLocation();
     const [form, setForm] = useState({
-        email: '',
-        password: '',
+        email: "",
+        password: "",
     });
 
     const { signIn } = useAuth();
     const [errors, setErrors] = useState({});
-    const [generalError, setGeneralError] = useState('');
+    const [generalError, setGeneralError] = useState("");
     const [loading, setLoading] = useState(false);
 
     // Update the field the user is typing into.
@@ -60,7 +59,7 @@ function Login() {
             [name]: undefined,
         }));
 
-        setGeneralError('');
+        setGeneralError("");
     }
 
     // Handle the form submission.
@@ -69,7 +68,7 @@ function Login() {
 
         if (loading) return;
 
-        setGeneralError('');
+        setGeneralError("");
 
         const validationErrors = validateForm(form);
         setErrors(validationErrors);
@@ -83,10 +82,23 @@ function Login() {
         try {
             const user = await signIn(
                 form.email.trim().toLowerCase(),
-                form.password
+                form.password,
             );
 
-            navigate('/', {
+            // Get the page the user originally wanted to visit
+            const from = location.state?.from;
+
+            // Build the original URL, including query parameters
+            const destination =
+                typeof from?.pathname === "string" &&
+                from.pathname.startsWith("/") &&
+                !from.pathname.startsWith("//") &&
+                from.pathname !== "/login"
+                    ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
+                    : "/";
+
+            // Redirect to the original page, or the homepage
+            navigate(destination, {
                 replace: true,
                 state: {
                     loginSuccess: `Welcome back, ${user.name}!`,
@@ -101,34 +113,32 @@ function Login() {
                 const formattedErrors = Object.fromEntries(
                     Object.entries(serverErrors)
                         .filter(([field]) =>
-                            ['email', 'password'].includes(field)
+                            ["email", "password"].includes(field),
                         )
                         .map(([field, messages]) => [
                             field,
                             Array.isArray(messages)
                                 ? messages[0]
                                 : String(messages),
-                        ])
+                        ]),
                 );
 
                 setErrors(formattedErrors);
-                setGeneralError('Please correct the highlighted fields.');
+                setGeneralError("Please correct the highlighted fields.");
             } else if (status === 401) {
-                setGeneralError('Invalid email or password.');
+                setGeneralError("Invalid email or password.");
             } else if (status === 409) {
-                setGeneralError('You are already signed in.');
+                setGeneralError("You are already signed in.");
             } else if (status === 419) {
                 setGeneralError(
-                    'Your security session expired. Please try again.'
+                    "Your security session expired. Please try again.",
                 );
             } else if (status === 429) {
                 setGeneralError(
-                    'Too many login attempts. Please wait before trying again.'
+                    "Too many login attempts. Please wait before trying again.",
                 );
             } else {
-                setGeneralError(
-                    'Unable to log in. Please try again later.'
-                );
+                setGeneralError("Unable to log in. Please try again later.");
             }
         } finally {
             setLoading(false);
@@ -170,7 +180,7 @@ function Login() {
                                         name="email"
                                         type="email"
                                         autoComplete="email"
-                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.email ? "is-invalid" : ""}`}
                                         value={form.email}
                                         onChange={handleChange}
                                         disabled={loading}
@@ -196,7 +206,7 @@ function Login() {
                                         name="password"
                                         type="password"
                                         autoComplete="current-password"
-                                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.password ? "is-invalid" : ""}`}
                                         value={form.password}
                                         onChange={handleChange}
                                         disabled={loading}
@@ -223,13 +233,13 @@ function Login() {
                                             Logging in...
                                         </>
                                     ) : (
-                                        'Log in'
+                                        "Log in"
                                     )}
                                 </button>
                             </form>
 
                             <p className="text-center mt-4 mb-0">
-                                Don't have an account?{' '}
+                                Don't have an account?{" "}
                                 <Link to="/register">Sign up</Link>
                             </p>
                         </div>
