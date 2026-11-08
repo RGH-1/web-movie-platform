@@ -1,25 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { getProfile } from '../services/profile';
+import ProfileEditForm from '../components/ProfileEditForm';
+import { useAuth } from '../hooks/useAuth';
+import { GENRES } from '../utils/profileForm';
 
-const genreLabels = {
-  action: 'Action',
-  adventure: 'Adventure',
-  animation: 'Animation',
-  comedy: 'Comedy',
-  crime: 'Crime',
-  documentary: 'Documentary',
-  drama: 'Drama',
-  fantasy: 'Fantasy',
-  horror: 'Horror',
-  mystery: 'Mystery',
-  romance: 'Romance',
-  'science-fiction': 'Science fiction',
-  thriller: 'Thriller',
-};
+
 
 export default function ProfilePage() {
   const location = useLocation();
+  const { setUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [success, setSuccess] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState({ status: 'loading', profile: null });
 
@@ -48,6 +40,13 @@ export default function ProfilePage() {
 
   if (state.status === 'unauthenticated') {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  function saved(profile) {
+    setState({ status: 'ready', profile });
+    setUser((current) => current ? { ...current, name: profile.name, email: profile.email } : current);
+    setEditing(false);
+    setSuccess('Your profile was saved.');
   }
 
   function retry() {
@@ -90,10 +89,31 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {state.status === 'ready' && (
+          {success && <p className="alert alert-success" role="status">{success}</p>}
+
+          {state.status === 'ready' && editing && (
+            <div className="card shadow-sm">
+              <div className="card-body p-3 p-md-4">
+                <ProfileEditForm
+                  profile={state.profile}
+                  onSaved={saved}
+                  onCancel={() => setEditing(false)}
+                  onUnauthenticated={() => setState({ status: 'unauthenticated', profile: null })}
+                />
+              </div>
+            </div>
+          )}
+
+          {state.status === 'ready' && !editing && (
             <article className="card shadow-sm">
               <div className="card-body p-3 p-md-4">
-                <h2 className="h5 mb-4">Account details</h2>
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                  <h2 className="h5 mb-0">Account details</h2>
+                  <button type="button" className="btn btn-outline-primary"
+                    onClick={() => { setSuccess(''); setEditing(true); }}>
+                    Edit profile
+                  </button>
+                </div>
                 <dl className="row mb-0">
                   <dt className="col-12 col-sm-4 mb-1">Name</dt>
                   <dd className="col-12 col-sm-8 mb-4 text-break">
@@ -120,7 +140,7 @@ export default function ProfilePage() {
                         {state.profile.favorite_genres.map((genre, index) => (
                           <li key={genre + index}>
                             <span className="badge text-bg-secondary">
-                              {genreLabels[genre] ?? genre}
+                              {GENRES[genre] ?? genre}
                             </span>
                           </li>
                         ))}
