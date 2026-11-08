@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
@@ -14,34 +15,66 @@ function MovieDiscovery() {
     const [error, setError] = useState('');
     const [validationError, setValidationError] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
+
     const requestId = useRef(0);
+    const pendingRequest = useRef(null);
+    const displayedResults = useRef(null);
 
     useEffect(() => {
         return () => {
             requestId.current += 1;
+            pendingRequest.current = null;
         };
     }, []);
 
     async function performSearch(searchQuery, requestedPage = 1) {
+        const requestKey = JSON.stringify([searchQuery, requestedPage]);
+
+        // Prevent duplicate requests while the same search is loading.
+        if (pendingRequest.current === requestKey) {
+            return;
+        }
+
+        const isNewSearch =
+            !displayedResults.current ||
+            displayedResults.current.query !== searchQuery;
+
         const currentRequest = ++requestId.current;
+        pendingRequest.current = requestKey;
 
         setLoading(true);
         setError('');
         setValidationError('');
-        setHasSearched(true);
-        setMovies([]);
+
+        if (isNewSearch) {
+            setHasSearched(false);
+            setMovies([]);
+            setTotalPages(0);
+            setTotalResults(0);
+        }
 
         try {
             const result = await searchMovies(searchQuery, requestedPage);
 
-            if (currentRequest !== requestId.current) return;
+            if (currentRequest !== requestId.current) {
+                return;
+            }
 
             setMovies(result.data);
             setPage(result.meta.page);
             setTotalPages(result.meta.total_pages);
             setTotalResults(result.meta.total_results);
+            setSubmittedQuery(searchQuery);
+            setHasSearched(true);
+
+            displayedResults.current = {
+                query: searchQuery,
+                page: result.meta.page,
+            };
         } catch (err) {
-            if (currentRequest !== requestId.current) return;
+            if (currentRequest !== requestId.current) {
+                return;
+            }
 
             const status = err.response?.status;
 
@@ -62,6 +95,7 @@ function MovieDiscovery() {
             }
         } finally {
             if (currentRequest === requestId.current) {
+                pendingRequest.current = null;
                 setLoading(false);
             }
         }
@@ -82,15 +116,20 @@ function MovieDiscovery() {
             return;
         }
 
-        setSubmittedQuery(trimmedQuery);
-        setPage(1);
-        setTotalPages(0);
-        setTotalResults(0);
+        // Every new submission starts at page 1.
         performSearch(trimmedQuery, 1);
     }
 
     function changePage(nextPage) {
-        if (loading || nextPage < 1 || nextPage > totalPages) return;
+        if (
+            loading ||
+            !submittedQuery ||
+            nextPage === page ||
+            nextPage < 1 ||
+            nextPage > totalPages
+        ) {
+            return;
+        }
 
         performSearch(submittedQuery, nextPage);
     }
@@ -104,6 +143,7 @@ function MovieDiscovery() {
                         Search for movies and explore their details.
                     </p>
                 </div>
+
                 <Link to="/" className="btn btn-outline-secondary">
                     Home
                 </Link>
@@ -128,6 +168,7 @@ function MovieDiscovery() {
                         disabled={loading}
                         maxLength={201}
                     />
+
                     <button
                         type="submit"
                         className="btn btn-primary"
@@ -145,15 +186,21 @@ function MovieDiscovery() {
             </form>
 
             {loading && (
-                <div className="text-center py-5" role="status">
-                    <div className="spinner-border text-primary" aria-hidden="true" />
-                    <p className="mt-3">Searching for movies...</p>
+                <div className="text-center py-4" role="status">
+                    <div
+                        className="spinner-border text-primary"
+                        aria-hidden="true"
+                    />
+                    <p className="mt-3">
+                        Searching for movies...
+                    </p>
                 </div>
             )}
 
             {error && (
                 <div className="alert alert-danger" role="alert">
                     {error}
+
                     {error.includes('log in') && (
                         <Link to="/login" className="ms-2">
                             Log in
@@ -162,12 +209,13 @@ function MovieDiscovery() {
                 </div>
             )}
 
-            {!loading && !error && hasSearched && (
+            {!loading && hasSearched && (
                 <>
                     <div className="mb-4">
                         <h2 className="fs-5 mb-1">
                             Results for "{submittedQuery}"
                         </h2>
+
                         <p className="text-body-secondary small">
                             {totalResults} movie(s) found
                         </p>
@@ -206,7 +254,7 @@ function MovieDiscovery() {
                                 Previous
                             </button>
 
-                            <span>
+                            <span aria-live="polite">
                                 Page {page} of {totalPages}
                             </span>
 
