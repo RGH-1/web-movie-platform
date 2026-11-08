@@ -1,25 +1,27 @@
-import { Link, Route, Routes, useLocation } from "react-router-dom";
 
-import ApiHealthCheck from "./components/ApiHealthCheck";
-import TmdbIntegrationTest from "./components/TmdbIntegrationTest";
+import { useState } from 'react';
+import { Link, Route, Routes, useLocation } from 'react-router-dom';
 
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import ProfilePage from "./pages/ProfilePage";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ApiHealthCheck from './components/ApiHealthCheck';
+import TmdbIntegrationTest from './components/TmdbIntegrationTest';
+import ProtectedRoute from './components/ProtectedRoute';
 
-import { useAuth } from "./hooks/useAuth";
+import Register from './pages/Register';
+import Login from './pages/Login';
+import ProfilePage from './pages/ProfilePage';
+import MovieDiscovery from './pages/MovieDiscovery';
 
-import { useState } from "react";
+import { useAuth } from './hooks/useAuth';
 
-import "./App.css";
+import './App.css';
 
 // Development homepage
 function Home() {
     const location = useLocation();
 
     const successMessage =
-        location.state?.registrationSuccess || location.state?.loginSuccess;
+        location.state?.registrationSuccess ||
+        location.state?.loginSuccess;
 
     return (
         <main className="container py-5">
@@ -27,12 +29,30 @@ function Home() {
             <p className="mb-4">Development Environment</p>
 
             {successMessage && (
-                <div className="alert alert-success" role="status">
+                <div
+                    className="alert alert-success"
+                    role="status"
+                >
                     {successMessage}
                 </div>
             )}
 
+            <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
+                <Link to="/register" className="btn btn-primary">
+                    Create an account
+                </Link>
+
+                <Link to="/login" className="btn btn-outline-primary">
+                    Log in
+                </Link>
+
+                <Link to="/movies" className="btn btn-outline-primary">
+                    Discover Movies
+                </Link>
+            </div>
+
             <AuthControls />
+
             <ApiHealthCheck />
             <TmdbIntegrationTest />
         </main>
@@ -47,6 +67,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+
+            <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/movies" element={<MovieDiscovery />} />
             </Route>
 
             <Route
@@ -66,16 +91,16 @@ function AuthControls() {
     const { user, isAuthenticated, loading, signOut } = useAuth();
 
     const [loggingOut, setLoggingOut] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState('');
 
     async function handleLogout() {
         setLoggingOut(true);
-        setError("");
+        setError('');
 
         try {
             await signOut();
         } catch {
-            setError("Logout failed. Please try again.");
+            setError('Logout failed. Please try again.');
         } finally {
             setLoggingOut(false);
         }
@@ -94,22 +119,35 @@ function AuthControls() {
                         My profile
                     </Link>
 
+                    <Link
+                        to="/profile"
+                        className="btn btn-outline-primary me-2"
+                    >
+                        My profile
+                    </Link>
+
                     <button
                         type="button"
                         className="btn btn-danger"
                         onClick={handleLogout}
                         disabled={loggingOut}
                     >
-                        {loggingOut ? "Logging out..." : "Log out"}
+                        {loggingOut ? 'Logging out...' : 'Log out'}
                     </button>
                 </>
             ) : (
                 <>
-                    <Link to="/login" className="btn btn-primary me-2">
+                    <Link
+                        to="/login"
+                        className="btn btn-primary me-2"
+                    >
                         Log in
                     </Link>
 
-                    <Link to="/register" className="btn btn-outline-primary">
+                    <Link
+                        to="/register"
+                        className="btn btn-outline-primary"
+                    >
                         Sign up
                     </Link>
                 </>
