@@ -170,17 +170,11 @@ error bodies, and internal exception details out of client responses.
   to retrieve the three parts in one TMDB request.
 
 ```php
-$response = $tmdbService->get("/movie/{$tmdbId}", [
-    'language' => 'en-US',
-    'append_to_response' => 'credits,videos',
-]);
+$movie = $tmdbService->getMovieDetails($tmdbId);
 ```
 
-- Coordinate upstream error handling with the search developer. The
-  current service collapses unsuccessful HTTP responses into a generic
-  exception. Preserve the upstream status and `Retry-After` so the
-  details endpoint can distinguish a confirmed missing movie and
-  throttling from other failures.
+- Use `TmdbRequestException` to inspect upstream status and retry
+  information. Apply the error responses and retry policy defined above.
 - Map the result to this contract. A missing or mismatched movie ID or
   a missing title makes the base payload unusable and returns `502`.
   A usable base movie with missing credits, videos, or optional
@@ -215,3 +209,60 @@ export async function getMovieDetails(tmdbId) {
    `429` produces `503` with `Retry-After`.
 5. Responses contain no TMDB credentials or raw upstream errors.
    The frontend can render loading, loaded, not-found, and retry states.
+
+
+
+## TMDB service implementation — AB#51
+
+`TmdbService::getMovieDetails(int $movieId): array` retrieves and normalizes
+the movie details. It makes one authenticated request to
+`/movie/{movieId}` with `language=en-US` and
+`append_to_response=credits,videos`.
+
+The method returns the movie array described by this contract. The
+endpoint controller wraps that array under `data`.
+
+```php
+$movie = $tmdbService->getMovieDetails($tmdbId);
+
+return response()->json(['data' => $movie]);
+```
+
+The service selects up to eight cast members by billing order, the first
+named director, and the first official eligible YouTube trailer. It falls
+back to the first eligible unofficial trailer when needed. The supported
+YouTube key format is 11 letters, digits, underscores, or hyphens.
+
+Missing optional information becomes `null` or `[]` according to the
+response schema. Image URLs use `w342` for posters, `w780` for backdrops,
+and `w185` for cast profile images.
+
+### Exceptions for the endpoint implementation
+
+| Exception | Meaning |
+| --- | --- |
+| `InvalidArgumentException` | The caller supplied an ID outside the supported range. Validate route input before calling the service. |
+| `TmdbRequestException` | The request failed. Inspect `upstreamStatus` and `retryAfter`. A connection failure has no upstream status. |
+| `UnexpectedValueException` | The response did not contain a usable movie with the requested ID and a non-empty title. |
+| `RuntimeException` during service construction | Required TMDB configuration is missing. |
+
+Translate these failures to the HTTP statuses already defined in this
+contract. In particular, upstream `404` maps to `404`, upstream `429`
+maps to `503`, and connection failures or unusable responses map to `502`.
+Apply the contract's retry interval policy in the controller.
+
+Return controlled JSON messages and codes. Never serialize exception
+objects or return raw provider responses.
+
+### Verification
+
+From `backend`, run:
+
+```bash
+php artisan test --filter=TmdbMovieDetailsTest
+php artisan test
+```
+
+The dedicated service tests mock TMDB responses and verify authentication,
+the single-request behavior, normalization, trailer selection, missing
+information, and upstream errors.
