@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -47,9 +48,7 @@ class MovieSearchTest extends TestCase
     {
         Http::fake();
 
-        $user = User::factory()->create([
-            'name' => ' ',
-        ]);
+        $user = User::factory()->create(['name' => ' ']);
 
         $this->actingAs($user, 'web')
             ->getJson(self::URL . '?query=Titanic')
@@ -145,5 +144,67 @@ class MovieSearchTest extends TestCase
             ->assertHeader('Retry-After', '60');
 
         Http::assertSentCount(1);
+    }
+
+    public function test_search_with_no_results_returns_empty_array(): void
+    {
+        Http::fake([
+            'https://api.themoviedb.org/3/search/movie*' => Http::response([
+                'page' => 1,
+                'total_pages' => 0,
+                'total_results' => 0,
+                'results' => [],
+            ], 200),
+        ]);
+
+        $user = $this->createCompleteUser();
+
+        $this->actingAs($user, 'web')
+            ->getJson(self::URL . '?query=NonexistentMovie123')
+            ->assertOk()
+            ->assertJsonPath('data', [])
+            ->assertJsonPath('meta.page', 1)
+            ->assertJsonPath('meta.total_pages', 0)
+            ->assertJsonPath('meta.total_results', 0);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_tmdb_server_error_returns_502(): void
+    {
+        Http::fake([
+            'https://api.themoviedb.org/3/search/movie*' =>
+                Http::response([], 500),
+        ]);
+
+        $user = $this->createCompleteUser();
+
+        $this->actingAs($user, 'web')
+            ->getJson(self::URL . '?query=Titanic')
+            ->assertStatus(502)
+            ->assertJsonPath('code', 'MOVIE_SEARCH_UNAVAILABLE');
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_tmdb_connection_timeout_returns_502(): void
+    {
+        Http::fake([
+            'https://api.themoviedb.org/3/search/movie*' =>
+                function () {
+                    throw new ConnectionException('Connection timed out');
+                },
+        ]);
+
+        $user = $this->createCompleteUser();
+
+        $this->actingAs($user, 'web')
+            ->getJson(self::URL . '?query=Titanic')
+            ->assertStatus(502)
+            ->assertJsonPath('code', 'MOVIE_SEARCH_UNAVAILABLE')
+            ->assertDontSee('Connection timed out');
+
+        // No response is recorded when a connection exception is thrown.
+        Http::assertNothingSent();
     }
 }
