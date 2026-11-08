@@ -30,9 +30,8 @@ Route::prefix('v1')->group(function () {
 
 
     Route::middleware('auth:sanctum')->group(function () {
-
+        Route::get('/me', [AuthSessionController::class, 'me']);
         Route::get('/me/profile', [ProfileController::class, 'show']);
-
         Route::patch('/me/profile', [ProfileController::class, 'update']);
 
         // AB#41 - Laravel movie search endpoint
