@@ -249,3 +249,95 @@ For a manual check, sign in through the React login page, then use the
 same browser session to request `/api/v1/me`. Expect `200` and the
 signed-in user's fields. A request from a private browser window with
 no session should receive `401`.
+
+
+## Protected route policy — AB#23
+
+The React application uses Sanctum SPA authentication with Laravel's
+`web` session guard. The shared Axios client sends cookies and CSRF
+headers. The backend enables `statefulApi()` and protects account and
+application routes with `auth:sanctum`.
+
+### Access matrix
+
+| Endpoint | Access |
+| --- | --- |
+| `GET /api/health` | Public |
+| `GET /sanctum/csrf-cookie` | Public |
+| `GET /api/integration/tmdb/search` | Public temporary integration check |
+| `POST /api/v1/auth/register` | Guest entry point |
+| `POST /api/v1/auth/login` | Guest entry point, rate limited |
+| `POST /api/v1/auth/logout` | Authenticated |
+| `GET /api/v1/me` | Authenticated |
+| `GET /api/v1/me/profile` | Authenticated |
+| `PATCH /api/v1/me/profile` | Authenticated |
+| `GET /api/v1/movies/search` | Authenticated with a complete profile |
+
+Guest entry points still enforce validation and CSRF protection.
+Registration and login reject already signed-in users with `409`.
+
+### Adding protected routes
+
+In `backend/routes/api.php`, add account routes inside the existing
+`auth:sanctum` group:
+
+```php
+Route::middleware('auth:sanctum')->group(function () {
+    // Account routes go here.
+
+    Route::middleware('profile.complete')->group(function () {
+        // Movie browsing and other completion-dependent features go here.
+    });
+});
+```
+
+This group is inside the existing `v1` prefix. Laravel supplies `/api`,
+so a route declared as `/me` becomes `/api/v1/me`.
+
+Register the future movie details route inside the nested
+`profile.complete` group. Constrain its TMDB ID parameter to digits
+to distinguish it from `/movies/search`.
+
+Authentication-state restoration, profile repair, and logout belong
+directly in the authenticated group. Public entry points belong outside
+that group. Apply resource ownership checks separately when an endpoint
+can access another user's records.
+
+### Failure responses
+
+An unauthenticated protected request returns `401`:
+
+```json
+{
+  "message": "Unauthenticated."
+}
+```
+
+API authentication errors use JSON even when a caller accepts HTML.
+An authenticated account with an incomplete profile receives `403`
+and `code: PROFILE_INCOMPLETE` on completion-dependent features.
+
+A state-changing request with missing or invalid CSRF protection can
+receive `419` before authentication is evaluated. A public endpoint may
+also return validation or rate-limit errors. Public access means it
+does not require an existing authenticated account.
+
+### Local session configuration
+
+Use matching hostnames across the frontend URL, API base URL,
+credentialed CORS origin, and Sanctum's stateful domain list. The
+committed examples use `127.0.0.1`.
+
+### Verification
+
+From `backend`, run:
+
+```bash
+php artisan route:list --path=api -v
+php artisan test --filter=ApiRouteAccessTest
+php artisan test
+```
+
+The access tests verify public endpoints, guest rejection, JSON errors,
+authenticated access, and profile-completion boundaries. Existing
+authentication tests verify session cookies, CSRF, and logout behavior.
