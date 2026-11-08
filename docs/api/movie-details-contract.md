@@ -4,6 +4,11 @@ Parent story: View Movie Details
 Work item: AB#50 — F1 — Define the movie details API contract  
 Status: Proposed for team review
 
+This endpoint requires authentication and a complete profile under the
+current product flow. Send `Accept: application/json`. The request takes
+no body or query parameters. Use the `tmdb_id` from a
+[movie search result](movie-search-contract.md) as the path parameter.
+
 ## Endpoint
 
 `GET /api/v1/movies/{tmdbId}`
@@ -104,6 +109,8 @@ information still returns `200`.
 | HTTP status | Condition | Frontend behavior |
 | --- | --- | --- |
 | `404` | A numeric ID passes validation but TMDB confirms the movie does not exist. A nonnumeric path segment also returns a routing `404`. | Show the movie-not-found state. Handle either `404` by status. |
+| `401` | No valid authenticated session. | Show the signed-out state. |
+| `403` | The authenticated account has an incomplete profile. | Direct the user to complete their profile. |
 | `422` | The numeric path segment is zero or outside the supported ID range. Laravel rejects it before calling TMDB. | Show an invalid movie link message. |
 | `502` | TMDB connection or timeout failure, an unexpected upstream response, or an unusable movie payload. | Show that details are temporarily unavailable and offer a retry. |
 | `503` | TMDB returns `429` for the application's shared upstream access. | Wait for `Retry-After` before offering a retry. |
@@ -158,9 +165,9 @@ error bodies, and internal exception details out of client responses.
 
 ## Implementation handoff
 
-- Register `/movies/{tmdbId}` in the existing `v1` route group, outside
-  `auth:sanctum`. Use `whereNumber('tmdbId')` so the details route cannot
-  capture `/movies/search`.
+- Register `/movies/{tmdbId}` inside the existing `v1`, `auth:sanctum`,
+  and `profile.complete` groups. Use `whereNumber('tmdbId')` so the
+  details route cannot capture `/movies/search`.
 - Validate the route value, rather than a query-string field named
   `tmdbId`. A Form Request can take the value from
   `$this->route('tmdbId')` and apply `required`, `integer`, and
@@ -197,8 +204,9 @@ export async function getMovieDetails(tmdbId) {
 
 ## Acceptance checks for implementation
 
-1. A guest can open a movie from search using its `tmdb_id` and get
-   `200` with the documented fields and types.
+1. A signed-in account with a complete profile can retrieve a movie
+   using its `tmdb_id` and receive `200` with the documented fields.
+   Guests receive `401`, and incomplete accounts receive `403`.
 2. Missing optional fields produce `null` or `[]` as specified.
    A movie without a playable trailer still returns `200`.
 3. `movies/search` reaches the search route. Nonnumeric paths return
