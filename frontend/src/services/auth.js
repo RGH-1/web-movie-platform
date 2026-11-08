@@ -35,3 +35,10 @@ export async function loginUser(email, password) {
     // Step 3: Return the authenticated user's information.
     return response.data.data;
 }
+
+
+export async function getCurrentUser() {
+    const response = await api.get('/v1/me/profile');
+
+    return response.data.data;
+}

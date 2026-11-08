@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerUser } from '../services/auth';
+import { useAuth } from '../hooks/useAuth';
 
 // Check form values before sending them to Laravel.
 function validateForm(form) {
@@ -58,6 +58,7 @@ function Register() {
     const [errors, setErrors] = useState({});
     const [generalError, setGeneralError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { signUp } = useAuth();
 
     function handleChange(event) {
         const { name, value } = event.target;
@@ -92,12 +93,8 @@ function Register() {
         setLoading(true);
 
         try {
-            const user = await registerUser({
-                name: form.name.trim(),
-                email: form.email.trim().toLowerCase(),
-                password: form.password,
-                password_confirmation: form.password_confirmation,
-            });
+
+            const user = await signUp(form);
 
             navigate('/', {
                 replace: true,
