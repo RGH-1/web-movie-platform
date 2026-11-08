@@ -35,6 +35,19 @@ class AuthSessionController extends Controller
         ]);
     }
 
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'data' => [
+                'id' => (int) $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
+    }
+
     public function logout(Request $request): Response
     {
         Auth::guard('web')->logout();
