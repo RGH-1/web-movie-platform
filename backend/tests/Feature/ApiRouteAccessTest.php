@@ -17,7 +17,7 @@ class ApiRouteAccessTest extends TestCase
         parent::setUp();
 
         config([
-            'app.key' => 'base64:'.base64_encode(random_bytes(32)),
+            'app.key' => 'base64:' . base64_encode(random_bytes(32)),
             'sanctum.stateful' => ['127.0.0.1:5173'],
             'services.tmdb.base_url' => 'https://api.themoviedb.org/3',
             'services.tmdb.token' => 'fake-test-token',
@@ -103,19 +103,31 @@ class ApiRouteAccessTest extends TestCase
         Http::assertNothingSent();
     }
 
+
     public static function protectedEndpoints(): array
     {
         return [
             'current user' => ['GET', '/api/v1/me'],
+
             'read profile' => ['GET', '/api/v1/me/profile'],
+
             'update profile' => ['PATCH', '/api/v1/me/profile'],
+
             'logout' => ['POST', '/api/v1/auth/logout'],
+
             'movie search' => [
                 'GET',
                 '/api/v1/movies/search?query=Interstellar',
             ],
+
+            // AB#24: Movie details must also require authentication.
+            'movie details' => [
+                'GET',
+                '/api/v1/movies/157336',
+            ],
         ];
     }
+
 
     public function test_complete_account_can_access_protected_features(): void
     {
