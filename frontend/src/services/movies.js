@@ -28,5 +28,15 @@ export async function getMovieDetails(movieId) {
 
     const response = await api.get(`/v1/movies/${Number(id)}`);
 
-    return response.data.data;
+    const movie = response.data?.data;
+    if (!movie || movie.tmdb_id !== Number(id) ||
+        typeof movie.title !== 'string' || !movie.title.trim()) {
+        throw new Error('Invalid movie details response.');
+    }
+
+    return {
+        ...movie,
+        genres: Array.isArray(movie.genres) ? movie.genres : [],
+        cast: Array.isArray(movie.cast) ? movie.cast : [],
+    };
 }
