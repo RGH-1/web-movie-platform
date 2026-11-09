@@ -1,14 +1,15 @@
-
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from "react-router-dom";
 
 function MovieDetailNavigation() {
     const { tmdbId } = useParams();
 
     const movieId = Number(tmdbId);
+
     const isValidId =
-        /^\d+$/.test(tmdbId || '') &&
+        /^\d+$/.test(tmdbId || "") &&
         Number.isSafeInteger(movieId) &&
-        movieId > 0;
+        movieId > 0 &&
+        movieId <= 2147483647;
 
     if (!isValidId) {
         return (
