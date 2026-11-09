@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
+import { getMovieDetails } from "../services/movies";
+import MovieDetailsPage from "./MovieDetailsPage";
 
 function MovieDetailNavigation() {
     const { tmdbId } = useParams();
@@ -10,6 +14,57 @@ function MovieDetailNavigation() {
         Number.isSafeInteger(movieId) &&
         movieId > 0 &&
         movieId <= 2147483647;
+
+    const [result, setResult] = useState({
+        tmdbId: null,
+        movie: null,
+        loading: true,
+        error: null,
+    });
+
+    useEffect(() => {
+        if (!isValidId) return;
+
+        let isCurrent = true;
+
+        getMovieDetails(movieId)
+            .then((movie) => {
+                if (!isCurrent) return;
+
+                setResult({
+                    tmdbId,
+                    movie,
+                    loading: false,
+                    error: null,
+                });
+            })
+            .catch((error) => {
+                if (!isCurrent) return;
+
+                const status = error.response?.status;
+                let message = "Unable to load movie details. Please try again.";
+
+                if (status === 404) {
+                    message = "Movie not found.";
+                } else if (status === 403) {
+                    message =
+                        "Please complete your profile to view movie details.";
+                } else if (status === 502 || status === 503) {
+                    message = "Movie information is temporarily unavailable.";
+                }
+
+                setResult({
+                    tmdbId,
+                    movie: null,
+                    loading: false,
+                    error: message,
+                });
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [tmdbId, movieId, isValidId]);
 
     if (!isValidId) {
         return (
@@ -24,17 +79,37 @@ function MovieDetailNavigation() {
         );
     }
 
+    if (result.loading || result.tmdbId !== tmdbId) {
+        return (
+            <main className="container py-5">
+                <p role="status">Loading movie details...</p>
+            </main>
+        );
+    }
+
+    if (result.error) {
+        return (
+            <main className="container py-5">
+                <div className="alert alert-danger" role="alert">
+                    {result.error}
+                </div>
+                <Link to="/movies" className="btn btn-outline-primary">
+                    Back to Movie Discovery
+                </Link>
+            </main>
+        );
+    }
+
     return (
-        <main className="container py-5">
-            <h1>Movie Details</h1>
-            <p>TMDB Movie ID: {movieId}</p>
-            <p className="text-body-secondary">
-                Movie details will be implemented in Story F.
-            </p>
-            <Link to="/movies" className="btn btn-outline-primary">
-                Back to Movie Discovery
-            </Link>
-        </main>
+        <>
+            <div className="container pt-4">
+                <Link to="/movies" className="btn btn-outline-primary">
+                    Back to Movie Discovery
+                </Link>
+            </div>
+
+            <MovieDetailsPage movie={result.movie} />
+        </>
     );
 }
 
