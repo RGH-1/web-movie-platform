@@ -15,34 +15,26 @@ metadata uses explicit fallbacks. A zero TMDB rating is displayed as
 MovieImage is kept inside the page because it is currently used only
 there, for poster, backdrop, and cast photos.
 
-No route, API service, loading/error fetch states, or trailer playback
-is added by this task. AB#53 owns the route/API function, and AB#55
-connects live data and trailer playback. The existing
-MovieDetailNavigation placeholder and authentication are unchanged.
+AB#54 introduced the presentation layout. Live route/API integration and
+trailer behavior are provided by the merged implementation and AB#55.
 
-## Development preview
+## Viewing the integrated page
 
-Start the existing Vite server from frontend:
+Start Laravel and Vite, sign in with a complete profile, then search for a
+movie and select View Details. A direct example is:
 
-    npm run dev
+    http://127.0.0.1:5173/movies/157336
 
-Open:
+The temporary sample-data HTML/React preview was removed in AB#55 after
+the live route became available. The route now uses Laravel responses;
+it does not import sample fixtures.
 
-    http://127.0.0.1:5173/movie-details-preview.html
+The sample response remains in tests/fixtures/movieDetails.js because
+the automated layout, navigation, and integration tests still use it.
+Its values are illustrative, not live API output.
 
-The banner explicitly identifies sample data. Use Full sample and
-Missing metadata to inspect both layouts. The preview has no account
-or API access. Only sample images load from TMDB's image host; failures
-show placeholders.
-
-movie-details-preview.html and src/dev/movieDetailsPreview.jsx provide an
-isolated Vite development entry. They do not modify App.jsx or the
-production routing, and are not entries in the normal production build.
-Remove this preview when live route integration replaces it in AB#55.
-
-The sample response is in tests/fixtures/movieDetails.js and follows the
-agreed response shape. Its values are illustrative, not live API output.
-
+See [movie-details-integration.md](movie-details-integration.md) for live
+integration behavior and verification steps.
 ## Automated verification
 
 From frontend:
@@ -58,7 +50,10 @@ image sources. Existing profile and movie-search tests remain included.
 Automated checks passed during implementation. Lint retains the existing
 AuthContext Fast Refresh warning.
 
-## Visual checks all passed
+## Historical AB#54 sample-preview checks (passed)
+
+These checks were completed before removal of the temporary preview.
+Use the live route for subsequent browser checks.
 
 1. Open the full sample preview at desktop width; verify poster/metadata
    alignment, backdrop sizing, cast cards, and trailer section.
