@@ -13,3 +13,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Local movie catalog architecture (AB#69)](architecture/movie-catalog.md)
 - [Movie catalog ERD (AB#69)](architecture/movie-catalog-erd.md)
 - [Movie catalog API contract (AB#69)](api/movie-catalog-contract.md)
+- [Popular and upcoming movie API (AB#73)](api/movie-feeds-contract.md)
