@@ -27,6 +27,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [AuthSessionController::class, 'login'])->middleware('throttle:login');
     });
 
+    
+    Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
+    Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
+
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthSessionController::class, 'logout']);
@@ -42,9 +46,6 @@ Route::prefix('v1')->group(function () {
 
             // AB#48 - Laravel movie details endpoint
             Route::get('/movies/{tmdbId}', [MovieDetailsController::class, 'show']);
-
-            Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
-            Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
         });
     });
 });
