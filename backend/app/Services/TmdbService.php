@@ -64,6 +64,72 @@ class TmdbService
         return $response;
     }
 
+    public function getPopularMovies(int $page): array
+    {
+        return $this->getMovieFeed('/movie/popular', $page);
+    }
+
+    public function getUpcomingMovies(int $page): array
+    {
+        return $this->getMovieFeed('/movie/upcoming', $page);
+    }
+
+    private function getMovieFeed(string $endpoint, int $page): array
+    {
+        $response = $this->get($endpoint, [
+            'language' => 'en-US',
+            'page' => $page,
+        ]);
+
+        $payload = $response->json();
+        $results = $payload['results'] ?? null;
+        $totalPages = $payload['total_pages'] ?? null;
+        $totalResults = $payload['total_results'] ?? null;
+
+        if (
+            ! $response->ok()
+            || ! is_array($results)
+            || ! array_is_list($results)
+            || ! is_int($totalPages)
+            || $totalPages < 0
+            || ! is_int($totalResults)
+            || $totalResults < 0
+        ) {
+            throw new UnexpectedValueException('Invalid TMDB movie feed response.');
+        }
+
+        $movies = [];
+        foreach ($results as $movie) {
+            if (! is_array($movie)) {
+                throw new UnexpectedValueException('Invalid movie in TMDB feed.');
+            }
+
+            $id = $movie['id'] ?? null;
+            $title = $this->nullableText($movie['title'] ?? null);
+
+            if (! is_int($id) || $id < 1 || $id > 2147483647 || $title === null) {
+                throw new UnexpectedValueException('Invalid movie in TMDB feed.');
+            }
+
+            $movies[] = [
+                'tmdb_id' => $id,
+                'title' => $title,
+                'overview' => $this->nullableText($movie['overview'] ?? null),
+                'release_date' => $this->releaseDate($movie['release_date'] ?? null),
+                'poster_url' => $this->imageUrl($movie['poster_path'] ?? null, 'w342'),
+                'vote_average' => $this->movieRating($movie),
+            ];
+        }
+
+        return [
+            'data' => $movies,
+            'meta' => [
+                'page' => $page,
+                'total_pages' => min(500, $totalPages),
+                'total_results' => $totalResults,
+            ],
+        ];
+    }
 
     public function getMovieDetails(int $movieId): array
     {

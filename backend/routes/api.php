@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\MovieDetailsController;
+use App\Http\Controllers\MovieFeedController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 
 Route::get('/health', function () {
@@ -25,6 +26,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/register', [RegistrationController::class, 'register'])->middleware(RejectAuthenticatedRegistration::class);
         Route::post('/login', [AuthSessionController::class, 'login'])->middleware('throttle:login');
     });
+
+    
+    Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
+    Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
 
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
