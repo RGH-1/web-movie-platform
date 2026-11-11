@@ -1,0 +1,60 @@
+# Movie catalog ERD — AB#69
+
+This diagram describes the target relationships. `users` already exists. Catalog, social, and playback tables are implemented by their respective work items.
+
+```mermaid
+erDiagram
+    USERS ||--o{ REVIEWS : writes
+    USERS ||--o{ WATCHLIST_ENTRIES : saves
+    USERS ||--o{ CUSTOM_LISTS : owns
+    CUSTOM_LISTS ||--o{ LIST_MOVIES : contains
+    MOVIES ||--o{ REVIEWS : receives
+    MOVIES ||--o{ WATCHLIST_ENTRIES : appears_in
+    MOVIES ||--o{ LIST_MOVIES : appears_in
+    MOVIES ||--o{ MOVIE_MEDIA_ASSETS : has
+    MOVIE_MEDIA_ASSETS ||--o{ WATCH_SESSIONS : supplies
+
+    USERS {
+        bigint id PK
+    }
+    MOVIES {
+        bigint id PK
+        int tmdb_id UK "Nullable"
+        string source "tmdb or local"
+        string title
+        datetime tmdb_synced_at "Nullable"
+        datetime deactivated_at "Nullable"
+    }
+    REVIEWS {
+        bigint id PK
+        bigint user_id FK
+        bigint movie_id FK
+    }
+    WATCHLIST_ENTRIES {
+        bigint id PK
+        bigint user_id FK
+        bigint movie_id FK
+    }
+    CUSTOM_LISTS {
+        bigint id PK
+        bigint user_id FK
+    }
+    LIST_MOVIES {
+        bigint list_id PK, FK
+        bigint movie_id PK, FK
+    }
+    MOVIE_MEDIA_ASSETS {
+        bigint id PK
+        bigint movie_id FK
+        string disk
+        string object_key
+        string mime_type
+        datetime deactivated_at "Nullable"
+    }
+    WATCH_SESSIONS {
+        bigint id PK
+        bigint media_asset_id FK
+    }
+```
+
+`list_movies` uses the `(list_id, movie_id)` pair to prevent duplicate membership. Watchlist entries are unique by `(user_id, movie_id)`. All `movie_id` columns shown above are required and restrict deletion of the referenced movie. The playback session’s asset reference also restricts deletion. See the [catalog architecture](movie-catalog.md) for the full movie column definitions and lifecycle rules.
