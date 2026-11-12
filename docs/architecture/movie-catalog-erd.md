@@ -7,6 +7,7 @@ erDiagram
     USERS ||--o{ REVIEWS : writes
     USERS ||--o{ WATCHLIST_ENTRIES : saves
     USERS ||--o{ CUSTOM_LISTS : owns
+    USERS |o--o{ REVIEWS : moderates
     CUSTOM_LISTS ||--o{ LIST_MOVIES : contains
     MOVIES ||--o{ REVIEWS : receives
     MOVIES ||--o{ WATCHLIST_ENTRIES : appears_in
@@ -29,6 +30,14 @@ erDiagram
         bigint id PK
         bigint user_id FK
         bigint movie_id FK
+        tinyint rating "1 through 5"
+        text review_text "Nullable"
+        string moderation_status "Defaults to visible"
+        bigint moderated_by FK "Nullable"
+        datetime moderated_at "Nullable"
+        text moderation_reason "Nullable"
+        datetime created_at
+        datetime updated_at
     }
     WATCHLIST_ENTRIES {
         bigint id PK
@@ -58,3 +67,4 @@ erDiagram
 ```
 
 `list_movies` uses the `(list_id, movie_id)` pair to prevent duplicate membership. Watchlist entries are unique by `(user_id, movie_id)`. All `movie_id` columns shown above are required and restrict deletion of the referenced movie. The playback session’s asset reference also restricts deletion. See the [catalog architecture](movie-catalog.md) for the full movie column definitions and lifecycle rules.
+Reviews are unique by `(user_id, movie_id)`.
