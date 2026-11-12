@@ -8,6 +8,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\MovieDetailsController;
 use App\Http\Controllers\MovieFeedController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 
 Route::get('/health', function () {
@@ -30,6 +31,7 @@ Route::prefix('v1')->group(function () {
     
     Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
     Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
+    Route::get('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'index']);
 
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
@@ -46,6 +48,10 @@ Route::prefix('v1')->group(function () {
 
             // AB#48 - Laravel movie details endpoint
             Route::get('/movies/{tmdbId}', [MovieDetailsController::class, 'show']);
+
+            Route::post('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'store']);
+            Route::patch('/reviews/{review}', [ReviewController::class, 'update'])->can('update', 'review');
+            Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->can('delete', 'review');
         });
     });
 });
