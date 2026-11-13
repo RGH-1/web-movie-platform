@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 
 import { getMovieDetails } from "../services/movies";
 import MovieDetailsPage from "./MovieDetailsPage";
+import MovieReviewSection from "../components/MovieReviewSection.jsx";
 
 function MovieDetailNavigation() {
     const { tmdbId } = useParams();
@@ -125,7 +126,14 @@ function MovieDetailNavigation() {
     return (
         <>
             <div className="container pt-4">{backLink}</div>
-            <MovieDetailsPage movie={result.movie} />
+            <MovieDetailsPage movie={result.movie}>
+                {Object.hasOwn(result.movie, "local_movie_id") && (
+                    <MovieReviewSection
+                        movie={result.movie}
+                        onReload={() => setAttempt((value) => value + 1)}
+                    />
+                )}
+            </MovieDetailsPage>
         </>
     );
 }

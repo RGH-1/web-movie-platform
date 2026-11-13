@@ -25,14 +25,14 @@ function MovieImage({ src, alt, placeholder, aspectRatio }) {
   );
 }
 
-export default function MovieDetailsPage({ movie }) {
+export default function MovieDetailsPage({ movie, children }) {
   const title = movie.title?.trim() || "Untitled movie";
   const cast = movie.cast ?? [];
   const genres = movie.genres ?? [];
   const trailerKey =
     movie.trailer?.site === "YouTube" &&
-    typeof movie.trailer.key === "string" &&
-    /^[A-Za-z0-9_-]{11}$/.test(movie.trailer.key)
+      typeof movie.trailer.key === "string" &&
+      /^[A-Za-z0-9_-]{11}$/.test(movie.trailer.key)
       ? movie.trailer.key
       : null;
 
@@ -158,6 +158,8 @@ export default function MovieDetailsPage({ movie }) {
           )}
         </div>
       </section>
+
+      {children}
     </main>
   );
 }
