@@ -1,0 +1,25 @@
+.review-rating-star {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    border-radius: 0.375rem;
+    color: var(--bs-secondary-color);
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.review-rating-star.is-filled {
+    color: #e5a100;
+}
+
+.review-rating-input:focus-visible+.review-rating-star {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+}
+
+.review-rating-input:disabled+.review-rating-star {
+    cursor: default;
+    opacity: 0.65;
+}

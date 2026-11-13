@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { saveMovieReview } from '../services/reviews.js';
 
+import './MovieReviewForm.css';
+
 const RATINGS = [1, 2, 3, 4, 5];
 const REVIEW_MAX_LENGTH = 2000;
 
@@ -140,31 +142,53 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
             )}
 
             <fieldset disabled={saving}>
-                <div className="mb-3">
-                    <label htmlFor={`${id}-rating`} className="form-label">Rating</label>
-                    <select
-                        id={`${id}-rating`}
-                        className="form-select"
-                        required
-                        value={rating}
-                        onChange={(event) => setRating(event.target.value)}
-                        aria-invalid={Boolean(error?.rating)}
-                        aria-describedby={error?.rating ? `${id}-rating-error` : undefined}
-                    >
-                        <option value="">Choose a rating</option>
-                        {RATINGS.map((value) => (
-                            <option key={value} value={value}>{value} out of 5</option>
-                        ))}
-                    </select>
+
+                <fieldset
+                    className="mb-3"
+                    aria-describedby={error?.rating ? `${id}-rating-error` : undefined}
+                >
+                    <legend className="float-none w-auto fs-6 mb-1">Rating</legend>
+
+                    <div className="d-flex flex-wrap">
+                        {RATINGS.map((value) => {
+                            const starId = `${id}-rating-${value}`;
+                            const filled = value <= Number(rating);
+
+                            return (
+                                <div key={value} className="position-relative">
+                                    <input
+                                        id={starId}
+                                        className="visually-hidden review-rating-input"
+                                        type="radio"
+                                        name={`${id}-rating`}
+                                        value={value}
+                                        checked={rating === String(value)}
+                                        onChange={(event) => setRating(event.target.value)}
+                                        required
+                                        aria-invalid={Boolean(error?.rating)}
+                                    />
+                                    <label
+                                        htmlFor={starId}
+                                        className={`review-rating-star${filled ? ' is-filled' : ''}`}
+                                    >
+                                        <span aria-hidden="true">{filled ? '★' : '☆'}</span>
+                                        <span className="visually-hidden">{value} out of 5</span>
+                                    </label>
+                                </div>
+                            );
+                        })}
+                    </div>
+
                     {error?.rating && (
                         <p id={`${id}-rating-error`} className="text-danger small mt-1" role="alert">
                             {error.rating}
                         </p>
                     )}
-                </div>
-
+                </fieldset>
                 <div className="mb-3">
-                    <label htmlFor={`${id}-text`} className="form-label">Review (optional)</label>
+                    <label htmlFor={`${id}-text`} className="form-label">
+                        Review (optional)
+                    </label>
                     <textarea
                         id={`${id}-text`}
                         className="form-control"
@@ -174,7 +198,9 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
                         aria-invalid={Boolean(error?.reviewText)}
                         aria-describedby={error?.reviewText ? `${id}-text-error` : `${id}-text-help`}
                     />
-                    <div id={`${id}-text-help`} className="form-text">Up to 2,000 characters.</div>
+                    <div id={`${id}-text-help`} className="form-text">
+                        Up to 2,000 characters.
+                    </div>
                     {error?.reviewText && (
                         <p id={`${id}-text-error`} className="text-danger small mt-1" role="alert">
                             {error.reviewText}
@@ -192,7 +218,6 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
                     </button>
                 </div>
             </fieldset>
-
             <div role="status" className="text-success mt-2">
                 {saving ? 'Saving your review…' : success}
             </div>

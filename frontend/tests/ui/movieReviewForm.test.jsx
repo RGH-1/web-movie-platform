@@ -52,7 +52,7 @@ function openSection({ details = movie, auth = session, onReload = vi.fn() } = {
 }
 
 function selectRating(value) {
-    fireEvent.change(screen.getByLabelText('Rating'), { target: { value } });
+    fireEvent.click(screen.getByRole('radio', { name: `${value} out of 5` }));
 }
 
 function changeText(value) {
@@ -93,7 +93,8 @@ it('prefills an existing review and patches its trimmed text', async () => {
         details: { ...movie, viewer_review: { id: '17', rating: 5, review_text: 'Original' } },
     });
 
-    expect(screen.getByLabelText('Rating')).toHaveValue('5');
+    expect(screen.getByRole('radio', { name: '5 out of 5' })).toBeChecked();
+    expect(screen.getAllByText('★')).toHaveLength(5);
     expect(screen.getByLabelText('Review (optional)')).toHaveValue('Original');
 
     changeText('  Updated review.  ');
@@ -182,4 +183,18 @@ it('shows the unavailable state without a catalog mapping', () => {
 
     expect(screen.getByText('Reviews are unavailable for this movie.')).toBeInTheDocument();
     expect(screen.queryByRole('form', { name: 'Movie review' })).toBeNull();
+});
+
+it('fills the stars up to the selected rating', () => {
+    openSection();
+
+    selectRating('4');
+    expect(screen.getByRole('radio', { name: '4 out of 5' })).toBeChecked();
+    expect(screen.getAllByText('★')).toHaveLength(4);
+    expect(screen.getAllByText('☆')).toHaveLength(1);
+
+    selectRating('2');
+    expect(screen.getByRole('radio', { name: '2 out of 5' })).toBeChecked();
+    expect(screen.getAllByText('★')).toHaveLength(2);
+    expect(screen.getAllByText('☆')).toHaveLength(3);
 });
