@@ -6,8 +6,7 @@ use App\Exceptions\TmdbRequestException;
 use App\Services\TmdbService;
 use Illuminate\Http\JsonResponse;
 use RuntimeException;
-use UnexpectedValueException;
-use App\Models\Movie;
+use App\Services\MovieCatalogService;
 use Illuminate\Http\Request;
 
 class MovieDetailsController extends Controller
@@ -28,10 +27,13 @@ class MovieDetailsController extends Controller
         try {
             $movie = $tmdb->getMovieDetails((int) $tmdbId);
 
-            $localMovieId = Movie::query()
-                ->active()
-                ->where('tmdb_id', $movie['tmdb_id'])
-                ->value('id');
+            $catalog = app(MovieCatalogService::class);
+            $local = $catalog->resolveDetails($movie);
+            $localMovieId = $local->deactivated_at === null ? (string) $local->id : null;
+            if ($localMovieId !== null) {
+                $movie = array_replace($movie, $catalog->details($local));
+            }
+            $movie['source'] = 'tmdb';
 
             $viewerReview = $localMovieId === null
                 ? null
