@@ -9,6 +9,9 @@ use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\MovieDetailsController;
 use App\Http\Controllers\MovieFeedController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ResolveTmdbMovieController;
+use App\Http\Controllers\LocalMovieDetailsController;
+
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 
 Route::get('/health', function () {
@@ -46,11 +49,12 @@ Route::prefix('v1')->group(function () {
             // AB#41 - Laravel movie search endpoint
             Route::get('/movies/search', [MovieSearchController::class, 'search']);
 
-            Route::get('/catalog/movies/{movieId}', [\App\Http\Controllers\LocalMovieDetailsController::class, 'show']);
+            Route::get('/catalog/movies/{movieId}', [LocalMovieDetailsController::class, 'show']);
+            Route::post('/movies/tmdb/{tmdbId}/resolve', ResolveTmdbMovieController::class);
 
             // AB#48 - Laravel movie details endpoint
             Route::get('/movies/{tmdbId}', [MovieDetailsController::class, 'show']);
-
+            
             Route::post('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'store']);
             Route::patch('/reviews/{review}', [ReviewController::class, 'update'])->can('update', 'review');
             Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->can('delete', 'review');
