@@ -274,3 +274,19 @@ php artisan test
 The dedicated service tests mock TMDB responses and verify authentication,
 the single-request behavior, normalization, trailer selection, missing
 information, and upstream errors.
+
+## Review form context (AB#63)
+
+The protected details response includes `data.local_movie_id` and
+`data.viewer_review`. `local_movie_id` is the canonical `movies.id` as
+a decimal string when an active catalog movie matches the requested TMDB
+ID. It is `null` when no active mapping exists.
+
+`viewer_review` is the signed-in user's existing review for that catalog
+movie, represented as `{ "id": "17", "rating": 4, "review_text": null }`.
+It is `null` when the user has no review. This field includes the viewer's
+own hidden review so the edit form can load it. The public review list and
+rating statistics retain their visible-only behavior.
+
+Successful details responses use `Cache-Control: private, no-store`.
+See the [reviews API](movie-reviews-contract.md) for write endpoints.

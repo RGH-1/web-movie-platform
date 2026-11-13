@@ -5,7 +5,7 @@ All routes below require `auth:sanctum` and `profile.complete`. Send `Accept: ap
 | Method and path | Identity and behavior |
 | --- | --- |
 | `GET /api/v1/movies/search` | Existing live TMDB search. Keep the search result `tmdb_id`, result fields, and pagination as shipped. |
-| `GET /api/v1/movies/{tmdbId}` | Existing live TMDB details. Keep the response fields and add `data.local_movie_id` after catalog integration. Look up the active row by `movies.tmdb_id`. Return null if there is no active mapping. |
+| `GET /api/v1/movies/{tmdbId}` | Existing live TMDB details. Returns `data.local_movie_id` as a decimal string when an active catalog row matches `movies.tmdb_id`, or `null` when there is no active mapping. |
 | `GET /api/v1/movies/local/{movieId}` | Read one active catalog movie by `movies.id`, regardless of source. Serve the stored snapshot without a TMDB call. |
 | `POST /api/v1/movies/tmdb/{tmdbId}/resolve` | Resolve or import the TMDB movie. No body is required. Return `200` and the same identity fields for the first successful import and all subsequent successful resolutions. Apply the existing Sanctum SPA CSRF flow. |
 
