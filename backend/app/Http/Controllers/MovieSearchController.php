@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MovieSearchRequest;
 use App\Services\TmdbService;
+use App\Services\MovieCatalogService;
 use Illuminate\Http\JsonResponse;
 use RuntimeException;
 use App\Exceptions\TmdbRequestException;
@@ -69,7 +70,7 @@ class MovieSearchController extends Controller
             }
 
             return response()->json([
-                'data' => $data,
+                'data' => app(MovieCatalogService::class)->attachLocalIds($data),
                 'meta' => [
                     'page' => $page,
                     'total_pages' => min(500, $payload['total_pages']),

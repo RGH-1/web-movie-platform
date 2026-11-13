@@ -65,6 +65,7 @@ class MovieFeedTest extends TestCase
                     [
                         'tmdb_id' => 597,
                         'local_movie_id' => null,
+                        'source' => 'tmdb',
                         'title' => 'Titanic',
                         'overview' => 'A voyage across the Atlantic.',
                         'release_date' => '1997-12-19',
@@ -74,6 +75,7 @@ class MovieFeedTest extends TestCase
                     [
                         'tmdb_id' => 598,
                         'local_movie_id' => null,
+                        'source' => 'tmdb',
                         'title' => 'Another Film',
                         'overview' => null,
                         'release_date' => null,

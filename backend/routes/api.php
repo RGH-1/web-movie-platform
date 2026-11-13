@@ -46,6 +46,8 @@ Route::prefix('v1')->group(function () {
             // AB#41 - Laravel movie search endpoint
             Route::get('/movies/search', [MovieSearchController::class, 'search']);
 
+            Route::get('/catalog/movies/{movieId}', [\App\Http\Controllers\LocalMovieDetailsController::class, 'show']);
+
             // AB#48 - Laravel movie details endpoint
             Route::get('/movies/{tmdbId}', [MovieDetailsController::class, 'show']);
 

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\TmdbRequestException;
 use App\Http\Requests\MovieFeedRequest;
-use App\Models\Movie;
+use App\Services\MovieCatalogService;
 use App\Services\TmdbService;
 use Illuminate\Http\JsonResponse;
 use UnexpectedValueException;
@@ -46,26 +46,9 @@ class MovieFeedController extends Controller
             ], 502);
         }
 
-        $feed['data'] = $this->attachLocalIds($feed['data']);
+        $feed['data'] = app(MovieCatalogService::class)->attachLocalIds($feed['data']);
 
         return response()->json($feed);
     }
 
-    private function attachLocalIds(array $movies): array
-    {
-        if ($movies === []) {
-            return [];
-        }
-
-        $localIds = Movie::query()
-            ->active()
-            ->whereIn('tmdb_id', array_column($movies, 'tmdb_id'))
-            ->pluck('id', 'tmdb_id');
-
-        foreach ($movies as $index => $movie) {
-            $movies[$index]['local_movie_id'] = $localIds->get($movie['tmdb_id']);
-        }
-
-        return $movies;
-    }
 }
