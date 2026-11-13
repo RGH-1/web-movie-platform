@@ -7,10 +7,12 @@ use App\Services\TmdbService;
 use Illuminate\Http\JsonResponse;
 use RuntimeException;
 use UnexpectedValueException;
+use App\Models\Movie;
+use Illuminate\Http\Request;
 
 class MovieDetailsController extends Controller
 {
-    public function show(string $tmdbId, TmdbService $tmdb): JsonResponse
+    public function show(Request $request, string $tmdbId, TmdbService $tmdb): JsonResponse
     {
         if (
             !preg_match('/^[1-9][0-9]*$/D', $tmdbId) ||
@@ -26,9 +28,27 @@ class MovieDetailsController extends Controller
         try {
             $movie = $tmdb->getMovieDetails((int) $tmdbId);
 
-            return response()->json([
-                'data' => $movie,
-            ], 200);
+            $localMovieId = Movie::query()
+                ->active()
+                ->where('tmdb_id', $movie['tmdb_id'])
+                ->value('id');
+
+            $viewerReview = $localMovieId === null
+                ? null
+                : $request->user()->reviews()
+                    ->where('movie_id', $localMovieId)
+                    ->first(['id', 'rating', 'review_text']);
+
+            $movie['local_movie_id'] = $localMovieId === null ? null : (string) $localMovieId;
+            $movie['viewer_review'] = $viewerReview === null ? null : [
+                'id' => (string) $viewerReview->getKey(),
+                'rating' => $viewerReview->rating,
+                'review_text' => $viewerReview->review_text,
+            ];
+
+            return response()
+                ->json(['data' => $movie])
+                ->header('Cache-Control', 'private, no-store');
         } catch (TmdbRequestException $exception) {
             if ($exception->upstreamStatus === 404) {
                 return response()->json([
