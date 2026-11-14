@@ -40,6 +40,17 @@ export async function getMovieDetails(movieId) {
         cast: Array.isArray(movie.cast) ? movie.cast : [],
     };
 }
+
+export async function getPopularMovies(page = 1) {
+    const response = await api.get('/v1/movies/popular', { params: { page } });
+    return response.data;
+}
+
+export async function getUpcomingMovies(page = 1) {
+    const response = await api.get('/v1/movies/upcoming', { params: { page } });
+    return response.data;
+}
+
 export async function discoverMovies(filters = {}, page = 1) {
     const params = Object.fromEntries(
         Object.entries(filters).filter(([key, value]) =>
