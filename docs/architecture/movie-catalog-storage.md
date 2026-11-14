@@ -15,18 +15,17 @@ the canonical key.
 The ERD names are authoritative for future relationships:
 - Movie::reviews() targets Review, reviews.movie_id.
 - Movie::watchlistEntries() targets WatchlistEntry, watchlist_entries.movie_id.
-- Movie::customLists() targets CustomList through list_movies, using
-  movie_id and list_id.
+- Movie::movieLists() targets MovieList through movie_list_items, using
+  movie_id and movie_list_id (updated by AB#90).
 
-Review, WatchlistEntry, and CustomList are delivered by their own G/H/I
-tasks. Do not call these relationships until those models/tables exist.
-Relationship-key tests use related-model test doubles rather than adding
-another team's production models.
+Review and MovieList now exist in their respective domains. WatchlistEntry
+remains dependent on its owner's task. AB#90 tests real movie-list persistence
+and deletion; the original relationship-key test still inspects key definitions.
 
 Dependent movie_id columns must be non-null foreignId columns referencing
 movies.id with restrictOnDelete(), as specified by P1. List membership
-uses the ERD table names custom_lists/list_movies, not the alternative
-names in the initial Azure descriptions.
+uses movie_lists/movie_list_items as required by AB#90. These task names
+supersede the original ERD names; see movie-lists-schema.md.
 
 ## Storage and invariants
 
@@ -68,9 +67,9 @@ Implementation verification also ran all nine catalog tests on MySQL
 database was removed afterward; no migration was applied to the working
 development database.
 
-The relationship tests verify the ERD key definitions. Actual relationship
-persistence/deletion tests must be added by G/H/I when their real models
-and schemas are available.
+The relationship tests verify the ERD key definitions. AB#90 adds actual list
+persistence/deletion tests. Remaining domain owners add their own tests
+when their real models and schemas are available.
 
 After code review, run php artisan migrate against your configured
 development database to add movies. Do not use migrate:fresh on a database
