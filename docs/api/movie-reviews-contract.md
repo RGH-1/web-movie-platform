@@ -49,3 +49,20 @@ GET returns an array of these reviews under `data`, newest first, with ties orde
 | `409` | The user already has a review for this movie, including a hidden review. Code `REVIEW_ALREADY_EXISTS`. |
 | `419` | Failed CSRF verification for a state-changing SPA request. |
 | `422` | Invalid body or pagination. Laravel includes field errors under `errors`. |
+
+
+## First review from TMDB Movie Details (AB#102)
+
+When Movie Details supplies `local_movie_id`, the form creates the review
+directly. For an unmapped TMDB movie, submitting a valid form first calls
+`POST /api/v1/movies/tmdb/{tmdbId}/resolve` and then creates the review using
+the canonical ID from the response. Viewing Movie Details and invalid form
+submissions perform no catalog writes. A deactivated mapping remains unavailable
+for new reviews.
+
+If resolution fails, the form keeps the draft and sends no review request.
+The form waits for `Retry-After` before retrying a rate-limited resolution.
+If resolution succeeds and the review write fails, the catalog row persists
+and a retry from the same form reuses its ID. A duplicate review still offers
+the reload-to-edit action. After a successful save, reopening Movie Details
+prefills the owner's review.
