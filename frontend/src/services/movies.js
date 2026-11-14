@@ -40,3 +40,17 @@ export async function getMovieDetails(movieId) {
         cast: Array.isArray(movie.cast) ? movie.cast : [],
     };
 }
+export async function discoverMovies(filters = {}, page = 1) {
+    const params = Object.fromEntries(
+        Object.entries(filters).filter(([key, value]) =>
+            ['genre_id', 'year', 'min_rating', 'sort_by'].includes(key) && value !== '' && value != null
+        )
+    );
+    const response = await api.get('/v1/movies/discover', { params: { ...params, page } });
+    return response.data;
+}
+
+export async function getMovieGenres() {
+    const response = await api.get('/v1/movies/genres');
+    return response.data.data;
+}

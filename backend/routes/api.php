@@ -29,6 +29,8 @@ Route::prefix('v1')->group(function () {
     });
 
     
+    Route::get('/movies/discover', [MovieFeedController::class, 'discover']);
+    Route::get('/movies/genres', [MovieFeedController::class, 'genres']);
     Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
     Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
     Route::get('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'index']);
