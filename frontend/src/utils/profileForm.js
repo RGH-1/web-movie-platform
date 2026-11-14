@@ -17,7 +17,7 @@ export const GENRES = {
 export function profileToForm(profile) {
   return {
     name: profile.name,
-    email: profile.email,
+    email: profile.email ?? '',
     bio: profile.bio ?? '',
     favorite_genres: [...profile.favorite_genres],
     current_password: '',
@@ -51,7 +51,7 @@ export function validateProfileForm(form, profile) {
   ) {
     errors.favorite_genres = ['Choose up to five different supported genres.'];
   }
-  if (emailIsChanging(form, profile) && !form.current_password) {
+  if (profile.email !== null && emailIsChanging(form, profile) && !form.current_password) {
     errors.current_password = ['Enter your current password to change your email.'];
   }
   return errors;
@@ -64,7 +64,7 @@ export function buildProfileUpdate(form, profile) {
     bio: form.bio.trim() || null,
     favorite_genres: [...form.favorite_genres],
   };
-  if (emailIsChanging(form, profile)) {
+  if (profile.email !== null && emailIsChanging(form, profile)) {
     // Passwords must never be trimmed or normalized.
     update.current_password = form.current_password;
   }

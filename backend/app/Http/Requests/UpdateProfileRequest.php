@@ -49,7 +49,9 @@ class UpdateProfileRequest extends FormRequest
             ],
         ];
 
-        if (is_string($this->input('email')) && $this->input('email') !== $this->user()->email) {
+        // A provider-only account can supply its first email in its authenticated session.
+        // Changing an existing address still requires the local password.
+        if ($this->user()->email !== null && is_string($this->input('email')) && $this->input('email') !== $this->user()->email) {
             $rules['current_password'] = ['bail', 'required', 'string', 'current_password:web'];
         }
 

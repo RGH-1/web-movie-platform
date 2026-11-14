@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import GithubSignIn from '../components/GithubSignIn';
 
 // Check form values before sending them to Laravel.
 function validateForm(form) {
@@ -147,6 +148,7 @@ function Register() {
                                 </div>
                             )}
 
+                            <GithubSignIn />
                             <form onSubmit={handleSubmit} noValidate>
                                 <div className="mb-3 text-start">
                                     <label htmlFor="name" className="form-label">

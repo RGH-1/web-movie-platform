@@ -8,6 +8,16 @@ const profile = {
   id: 1, name: 'Sam', email: 'sam@example.com', bio: null, favorite_genres: ['drama'],
 };
 
+test('provider-only users can supply a first email without an unknown password', () => {
+  const incomplete = { ...profile, email: null };
+  const form = profileToForm(incomplete);
+  assert.equal(form.email, '');
+  form.email = 'first@example.com';
+  assert.deepEqual(validateProfileForm(form, incomplete), {});
+  assert.equal(buildProfileUpdate(form, incomplete).email, 'first@example.com');
+  assert.equal(Object.hasOwn(buildProfileUpdate(form, incomplete), 'current_password'), false);
+});
+
 test('editing prefills fields without mutating saved profile', () => {
   const form = profileToForm(profile);
   assert.equal(form.bio, '');

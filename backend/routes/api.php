@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\GithubAuthController;
 use App\Http\Controllers\LocalMovieDetailsController;
 use App\Http\Controllers\MovieDetailsController;
 use App\Http\Controllers\MovieFeedController;
@@ -41,6 +42,7 @@ Route::prefix('v1')->group(function () {
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthSessionController::class, 'logout']);
+        Route::post('/auth/github/link', [GithubAuthController::class, 'link'])->middleware('throttle:passwords');
         Route::post('/auth/change-password', [PasswordController::class, 'change'])->middleware('throttle:passwords');
 
         Route::get('/me', [AuthSessionController::class, 'me']);

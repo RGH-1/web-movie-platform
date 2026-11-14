@@ -24,7 +24,7 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
   const [saving, setSaving] = useState(false);
   const pending = useRef(null);
   const errorSummary = useRef(null);
-  const changingEmail = emailIsChanging(form, profile);
+  const changingEmail = profile.email !== null && emailIsChanging(form, profile);
 
   useEffect(() => () => pending.current?.abort(), []);
 

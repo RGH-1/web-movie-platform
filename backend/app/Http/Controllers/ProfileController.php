@@ -8,6 +8,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -58,6 +59,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'bio' => $user->bio,
                 'favorite_genres' => $user->favorite_genres ?? [],
+                'github_linked' => DB::table('social_accounts')->where('user_id', $user->id)->where('provider', 'github')->exists(),
             ],
             'meta' => [
                 'profile_complete' => $incompleteFields === [],

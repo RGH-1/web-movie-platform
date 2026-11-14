@@ -5,6 +5,7 @@ import ProfileEditForm from '../components/ProfileEditForm';
 import { useAuth } from '../hooks/useAuth';
 import { GENRES } from '../utils/profileForm';
 import ProfileCompletionNotice from '../components/ProfileCompletionNotice';
+import GithubLink from '../components/GithubLink';
 
 
 
@@ -171,6 +172,7 @@ export default function ProfilePage() {
               </div>
             </article>
           )}
+          {state.status === 'ready' && !editing && <GithubLink linked={state.profile.github_linked === true} />}
         </div>
       </div>
     </main>
