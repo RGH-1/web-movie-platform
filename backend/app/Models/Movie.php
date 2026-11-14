@@ -16,9 +16,22 @@ class Movie extends Model
     use HasFactory;
 
     protected $fillable = [
-        'source', 'tmdb_id', 'title', 'overview', 'release_date', 'runtime_minutes',
-        'genres', 'poster_url', 'backdrop_url', 'director', 'cast', 'vote_average',
-        'trailer', 'metadata_overrides', 'tmdb_synced_at', 'deactivated_at',
+        'source',
+        'tmdb_id',
+        'title',
+        'overview',
+        'release_date',
+        'runtime_minutes',
+        'genres',
+        'poster_url',
+        'backdrop_url',
+        'director',
+        'cast',
+        'vote_average',
+        'trailer',
+        'metadata_overrides',
+        'tmdb_synced_at',
+        'deactivated_at',
     ];
 
     protected $attributes = [
@@ -84,11 +97,6 @@ class Movie extends Model
         return $this->hasMany(Review::class, 'movie_id');
     }
 
-    public function watchlistEntries(): HasMany
-    {
-        return $this->hasMany(WatchlistEntry::class, 'movie_id');
-    }
-
     public function customLists(): BelongsToMany
     {
         return $this->belongsToMany(CustomList::class, 'list_movies', 'movie_id', 'list_id');
@@ -97,5 +105,12 @@ class Movie extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereNull('deactivated_at');
+    }
+
+
+
+    public function userStatuses(): HasMany
+    {
+        return $this->hasMany(UserMovieStatus::class, 'movie_id');
     }
 }
