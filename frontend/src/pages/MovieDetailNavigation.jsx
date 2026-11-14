@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { getMovieDetails } from "../services/movies";
 import MovieDetailsPage from "./MovieDetailsPage";
 import MovieReviewSection from "../components/MovieReviewSection.jsx";
+import MovieStatusActions from "../components/MovieStatusActions.jsx";
 
 function MovieDetailNavigation() {
     const { tmdbId } = useParams();
@@ -43,28 +44,46 @@ function MovieDetailNavigation() {
                 } else if (status === 422) {
                     message = "Invalid movie identifier.";
                 } else if (status === 403) {
-                    message = "Please complete your profile to view movie details.";
+                    message =
+                        "Please complete your profile to view movie details.";
                 } else if (status === 502 || status === 503) {
                     message = "Movie information is temporarily unavailable.";
                 }
 
                 // Laravel's rate-limit contract returns a positive delay in seconds.
-                const seconds = Number(error.response?.headers?.["retry-after"]);
-                const retryAt = status === 503
-                    ? Date.now() + (Number.isSafeInteger(seconds) && seconds > 0 ? seconds : 30) * 1000
-                    : null;
+                const seconds = Number(
+                    error.response?.headers?.["retry-after"],
+                );
+                const retryAt =
+                    status === 503
+                        ? Date.now() +
+                          (Number.isSafeInteger(seconds) && seconds > 0
+                              ? seconds
+                              : 30) *
+                              1000
+                        : null;
 
                 setResult({
-                    tmdbId, attempt, movie: null, error: message, status, retryAt,
+                    tmdbId,
+                    attempt,
+                    movie: null,
+                    error: message,
+                    status,
+                    retryAt,
                 });
             });
 
-        return () => { isCurrent = false; };
+        return () => {
+            isCurrent = false;
+        };
     }, [tmdbId, movieId, isValidId, attempt]);
 
     useEffect(() => {
         if (!result.retryAt) return;
-        const timer = setTimeout(() => setNow(Date.now()), Math.max(0, result.retryAt - Date.now()));
+        const timer = setTimeout(
+            () => setNow(Date.now()),
+            Math.max(0, result.retryAt - Date.now()),
+        );
         return () => clearTimeout(timer);
     }, [result.retryAt]);
 
@@ -77,7 +96,9 @@ function MovieDetailNavigation() {
     if (!isValidId) {
         return (
             <main className="container py-5">
-                <div className="alert alert-warning" role="alert">Invalid movie identifier.</div>
+                <div className="alert alert-warning" role="alert">
+                    Invalid movie identifier.
+                </div>
                 {backLink}
             </main>
         );
@@ -101,21 +122,30 @@ function MovieDetailNavigation() {
 
         return (
             <main className="container py-5">
-                <div className="alert alert-danger" role="alert">{result.error}</div>
+                <div className="alert alert-danger" role="alert">
+                    {result.error}
+                </div>
                 {waiting && (
                     <p role="status" className="mb-3">
-                        Please wait before retrying. The retry button will become available automatically.
+                        Please wait before retrying. The retry button will
+                        become available automatically.
                     </p>
                 )}
                 <div className="d-flex flex-wrap justify-content-center gap-2">
                     {retryable && (
-                        <button type="button" className="btn btn-primary" disabled={waiting}
-                            onClick={() => setAttempt((value) => value + 1)}>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            disabled={waiting}
+                            onClick={() => setAttempt((value) => value + 1)}
+                        >
                             Try again
                         </button>
                     )}
                     {result.status === 403 && (
-                        <Link to="/profile?edit=1" className="btn btn-primary">Complete profile</Link>
+                        <Link to="/profile?edit=1" className="btn btn-primary">
+                            Complete profile
+                        </Link>
                     )}
                     {backLink}
                 </div>
@@ -126,7 +156,13 @@ function MovieDetailNavigation() {
     return (
         <>
             <div className="container pt-4">{backLink}</div>
+
             <MovieDetailsPage movie={result.movie}>
+                <MovieStatusActions
+                    key={result.movie.local_movie_id ?? tmdbId}
+                    movie={result.movie}
+                />
+
                 {Object.hasOwn(result.movie, "local_movie_id") && (
                     <MovieReviewSection
                         movie={result.movie}
