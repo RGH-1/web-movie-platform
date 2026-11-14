@@ -12,6 +12,10 @@ vi.mock("../../src/services/movies", () => ({
     getMovieDetails: vi.fn(),
 }));
 
+vi.mock("../../src/components/MovieStatusActions.jsx", () => ({
+    default: () => null,
+}));
+
 afterEach(() => {
     cleanup();
     sessionStorage.clear();
