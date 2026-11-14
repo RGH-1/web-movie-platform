@@ -13,6 +13,15 @@ use UnexpectedValueException;
 
 class TmdbService
 {
+    public const DISCOVERY_SORTS = [
+        'popularity_desc' => 'popularity.desc',
+        'popularity_asc' => 'popularity.asc',
+        'rating_desc' => 'vote_average.desc',
+        'rating_asc' => 'vote_average.asc',
+        'release_date_desc' => 'primary_release_date.desc',
+        'release_date_asc' => 'primary_release_date.asc',
+    ];
+
     private string $baseUrl;
     private string $token;
 
@@ -74,12 +83,48 @@ class TmdbService
         return $this->getMovieFeed('/movie/upcoming', $page);
     }
 
-    private function getMovieFeed(string $endpoint, int $page): array
+    public function discoverMovies(array $filters = []): array
+    {
+        $sort = $filters['sort_by'] ?? 'popularity_desc';
+        if (! isset(self::DISCOVERY_SORTS[$sort])) {
+            throw new InvalidArgumentException('Unsupported movie sort option.');
+        }
+
+        $query = ['sort_by' => self::DISCOVERY_SORTS[$sort]];
+        foreach (['genre_id' => 'with_genres', 'year' => 'primary_release_year', 'min_rating' => 'vote_average.gte'] as $input => $parameter) {
+            if (array_key_exists($input, $filters)) {
+                $query[$parameter] = $filters[$input];
+            }
+        }
+
+        return $this->getMovieFeed('/discover/movie', (int) ($filters['page'] ?? 1), $query);
+    }
+
+    public function getMovieGenres(): array
+    {
+        $response = $this->get('/genre/movie/list', ['language' => 'en-US']);
+        $genres = $response->json('genres');
+        if (! $response->ok() || ! is_array($genres) || ! array_is_list($genres) || $genres === []) {
+            throw new UnexpectedValueException('Invalid TMDB movie genres response.');
+        }
+
+        $result = [];
+        foreach ($genres as $genre) {
+            if (! is_array($genre) || ! is_int($genre['id'] ?? null) || $genre['id'] < 1 || $this->nullableText($genre['name'] ?? null) === null) {
+                throw new UnexpectedValueException('Invalid TMDB movie genre.');
+            }
+            $result[] = ['id' => $genre['id'], 'name' => trim($genre['name'])];
+        }
+
+        return $result;
+    }
+
+    private function getMovieFeed(string $endpoint, int $page, array $query = []): array
     {
         $response = $this->get($endpoint, [
             'language' => 'en-US',
             'page' => $page,
-        ]);
+        ] + $query);
 
         $payload = $response->json();
         $results = $payload['results'] ?? null;
@@ -111,7 +156,7 @@ class TmdbService
                 throw new UnexpectedValueException('Invalid movie in TMDB feed.');
             }
 
-            $movies[] = [
+            $card = [
                 'tmdb_id' => $id,
                 'title' => $title,
                 'overview' => $this->nullableText($movie['overview'] ?? null),
@@ -119,6 +164,13 @@ class TmdbService
                 'poster_url' => $this->imageUrl($movie['poster_path'] ?? null, 'w342'),
                 'vote_average' => $this->movieRating($movie),
             ];
+            if ($endpoint === '/discover/movie') {
+                $card['genre_ids'] = array_values(array_filter(
+                    is_array($movie['genre_ids'] ?? null) ? $movie['genre_ids'] : [],
+                    fn ($id): bool => is_int($id) && $id > 0,
+                ));
+            }
+            $movies[] = $card;
         }
 
         return [
