@@ -5,12 +5,12 @@ This diagram describes the target relationships. `users` already exists. Catalog
 ```mermaid
 erDiagram
     USERS ||--o{ REVIEWS : writes
-    USERS ||--o{ WATCHLIST_ENTRIES : saves
+    USERS ||--o{ USER_MOVIE_STATUSES : saves
     USERS ||--o{ CUSTOM_LISTS : owns
     USERS |o--o{ REVIEWS : moderates
     CUSTOM_LISTS ||--o{ LIST_MOVIES : contains
     MOVIES ||--o{ REVIEWS : receives
-    MOVIES ||--o{ WATCHLIST_ENTRIES : appears_in
+    MOVIES ||--o{ USER_MOVIE_STATUSES : appears_in
     MOVIES ||--o{ LIST_MOVIES : appears_in
     MOVIES ||--o{ MOVIE_MEDIA_ASSETS : has
     MOVIE_MEDIA_ASSETS ||--o{ WATCH_SESSIONS : supplies
@@ -39,10 +39,14 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-    WATCHLIST_ENTRIES {
-        bigint id PK
-        bigint user_id FK
-        bigint movie_id FK
+    USER_MOVIE_STATUSES {
+    bigint id PK
+    bigint user_id FK
+    bigint movie_id FK
+    tinyint in_watchlist "Defaults to false"
+    timestamp watched_at "Nullable"
+    timestamp created_at
+    timestamp updated_at
     }
     CUSTOM_LISTS {
         bigint id PK
@@ -66,5 +70,5 @@ erDiagram
     }
 ```
 
-`list_movies` uses the `(list_id, movie_id)` pair to prevent duplicate membership. Watchlist entries are unique by `(user_id, movie_id)`. All `movie_id` columns shown above are required and restrict deletion of the referenced movie. The playback session’s asset reference also restricts deletion. See the [catalog architecture](movie-catalog.md) for the full movie column definitions and lifecycle rules.
+`list_movies` uses the `(list_id, movie_id)` pair to prevent duplicate membership. User movie statuses are unique by (user_id, movie_id). Each record independently tracks watchlist membership through in_watchlist and watched status through watched_at. Records with neither status are removed by the Eloquent model's cleanup logic. All `movie_id` columns shown above are required and restrict deletion of the referenced movie. The playback session’s asset reference also restricts deletion. See the [catalog architecture](movie-catalog.md) for the full movie column definitions and lifecycle rules.
 Reviews are unique by `(user_id, movie_id)`.
