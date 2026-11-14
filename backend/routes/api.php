@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TmdbIntegrationController;
+use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'store']);
             Route::patch('/reviews/{review}', [ReviewController::class, 'update'])->can('update', 'review');
             Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->can('delete', 'review');
+
+            Route::get('/me/movies', [UserMovieStatusController::class, 'index']);
+
+            Route::get('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'show']);
+
+            Route::patch('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'update']);
         });
     });
 });
