@@ -42,3 +42,33 @@ export async function updateMovieStatus(movieId, changes) {
 
     return response.data.data;
 }
+
+
+export async function getMyMovies(filter, page = 1, perPage = 12) {
+    if (!["watchlist", "watched"].includes(filter)) {
+        throw new Error("Invalid movie collection filter.");
+    }
+
+    if (!Number.isSafeInteger(page) || page < 1) {
+        throw new Error("Invalid page number.");
+    }
+
+    if (
+        !Number.isSafeInteger(perPage) ||
+        perPage < 1 ||
+        perPage > 50
+    ) {
+        throw new Error("Invalid page size.");
+    }
+
+    const response = await api.get("/v1/me/movies", {
+        params: {
+            filter,
+            page,
+            per_page: perPage,
+        },
+    });
+
+    return response.data;
+}
+
