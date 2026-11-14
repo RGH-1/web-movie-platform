@@ -145,9 +145,9 @@ class MovieCatalogTest extends TestCase
         $this->assertNull($movie->cast[0]['tmdb_person_id']);
     }
 
-    public function test_relationship_keys_follow_the_erd_without_creating_other_domains(): void
+    public function test_relationship_keys_follow_the_current_domain_schemas(): void
     {
-        // Test doubles stand in for the G/H/I models until their work items ship.
+        // Test doubles stand in for the related models to inspect relationship key definitions.
         $movie = new class extends Movie
         {
 
@@ -158,7 +158,7 @@ class MovieCatalogTest extends TestCase
                 $related->setTable(match ($class) {
                     'App\\Models\\Review' => 'reviews',
                     'App\\Models\\UserMovieStatus' => 'user_movie_statuses',
-                    'App\\Models\\CustomList' => 'custom_lists',
+                    'App\\Models\\MovieList' => 'movie_lists',
                 });
 
                 return $related;
@@ -168,9 +168,9 @@ class MovieCatalogTest extends TestCase
         $movie->id = '123';
         $this->assertSame('reviews.movie_id', $movie->reviews()->getQualifiedForeignKeyName());
         $this->assertSame('user_movie_statuses.movie_id', $movie->userStatuses()->getQualifiedForeignKeyName());
-        $this->assertSame('list_movies', $movie->customLists()->getTable());
-        $this->assertSame('movie_id', $movie->customLists()->getForeignPivotKeyName());
-        $this->assertSame('list_id', $movie->customLists()->getRelatedPivotKeyName());
+        $this->assertSame('movie_list_items', $movie->movieLists()->getTable());
+        $this->assertSame('movie_id', $movie->movieLists()->getForeignPivotKeyName());
+        $this->assertSame('movie_list_id', $movie->movieLists()->getRelatedPivotKeyName());
     }
 
     public function test_mysql_rejects_invalid_identity_even_when_model_validation_is_bypassed(): void

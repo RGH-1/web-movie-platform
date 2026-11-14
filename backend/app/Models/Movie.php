@@ -97,9 +97,10 @@ class Movie extends Model
         return $this->hasMany(Review::class, 'movie_id');
     }
 
-    public function customLists(): BelongsToMany
+  
+    public function movieLists(): BelongsToMany
     {
-        return $this->belongsToMany(CustomList::class, 'list_movies', 'movie_id', 'list_id');
+        return $this->belongsToMany(MovieList::class, 'movie_list_items', 'movie_id', 'movie_list_id')->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder
