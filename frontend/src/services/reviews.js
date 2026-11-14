@@ -7,8 +7,6 @@ export async function saveMovieReview({
     reviewText,
     signal,
 }) {
-    await prepareReviewWrite(signal);
-
     const payload = { rating, review_text: reviewText };
     const response = reviewId === null
         ? await api.post(

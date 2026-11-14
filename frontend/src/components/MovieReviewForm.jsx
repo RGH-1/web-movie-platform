@@ -55,7 +55,7 @@ function readSaveError(error) {
     return { message: 'Unable to save your review. Try again.' };
 }
 
-export default function MovieReviewForm({ movieId, existingReview, onReload }) {
+export default function MovieReviewForm({ movieId, tmdbId, existingReview, onReload }) {
     const location = useLocation();
     const id = useId();
     const pending = useRef(null);
