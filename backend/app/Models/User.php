@@ -70,4 +70,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class);
     }
+
+
+    public function movieStatuses(): HasMany
+    {
+        return $this->hasMany(UserMovieStatus::class);
+    }
 }
