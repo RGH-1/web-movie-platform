@@ -80,3 +80,17 @@ The movie-search interface correctly handles searches, empty results, validation
 One navigation-state bug was discovered, fixed, and successfully retested.
 
 Movie-details content remains a frontend placeholder and is outside the scope of this task.
+
+
+## Filtered discovery
+
+1. Open Discover Movies and choose **Browse by filters**. Confirm default popular results load.
+2. Confirm Genre options load from `GET /api/v1/movies/genres`, with no React genre ID list.
+3. Apply genre, release year, and minimum rating independently and together. Verify the request uses `genre_id`, `year`, `min_rating`, `sort_by`, and `page`.
+4. Exercise all six sorting choices. Apply always starts at page 1.
+5. Go to Next/Previous. Change a draft filter without applying it and confirm pagination continues using the submitted filters.
+6. Reset and confirm defaults. Open movie details from a card. Return to title search and confirm search still works.
+7. Simulate empty results, 422 validation, 502/503 responses, and failed genre loading. Confirm useful messages, retry controls and recovery; other filters remain available when genres fail.
+8. Check narrow mobile layout and keyboard navigation through labeled controls.
+
+Automated coverage: `npm test`; production build: `npm run build`.

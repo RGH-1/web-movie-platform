@@ -16,3 +16,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Popular and upcoming movie API (AB#73)](api/movie-feeds-contract.md)
 - [Review storage (AB#61)](architecture/review-storage.md)
 - [Movie reviews and ratings API (AB#62)](api/movie-reviews-contract.md)
+- [Movie discovery API](api/movie-discovery-contract.md)
