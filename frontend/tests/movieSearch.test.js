@@ -28,7 +28,7 @@ mock.module('../src/services/api.js', {
     },
 });
 
-const { searchMovies } = await import('../src/services/movies.js');
+const { searchMovies, getPopularMovies, getUpcomingMovies } = await import('../src/services/movies.js');
 
 test('search sends query and default page to Laravel', async () => {
     requests.length = 0;
@@ -66,3 +66,17 @@ test('search returns Laravel response metadata', async () => {
         total_results: 25,
     });
 });
+
+for (const [category, load] of [['popular', getPopularMovies], ['upcoming', getUpcomingMovies]]) {
+    test(`${category} sends default and requested pages through the shared Laravel client`, async () => {
+        requests.length = 0;
+        const result = await load();
+        await load(2);
+        assert.deepEqual(requests, [
+            { url: `/v1/movies/${category}`, config: { params: { page: 1 } } },
+            { url: `/v1/movies/${category}`, config: { params: { page: 2 } } },
+        ]);
+        assert.equal(result.data[0].title, 'Titanic');
+        assert.equal(result.meta.total_pages, 2);
+    });
+}
