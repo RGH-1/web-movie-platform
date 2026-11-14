@@ -66,6 +66,11 @@ class User extends Authenticatable
     }
 
 
+    public function movieLists(): HasMany
+    {
+        return $this->hasMany(MovieList::class);
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
