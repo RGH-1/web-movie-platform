@@ -8,10 +8,12 @@ use Illuminate\Http\JsonResponse;
 use RuntimeException;
 use App\Services\MovieCatalogService;
 use Illuminate\Http\Request;
+use App\Models\Movie;
+use UnexpectedValueException;
 
 class MovieDetailsController extends Controller
 {
-    public function show(Request $request, string $tmdbId, TmdbService $tmdb): JsonResponse
+    public function show(Request $request, string $tmdbId, TmdbService $tmdb, MovieCatalogService $catalog): JsonResponse
     {
         if (
             !preg_match('/^[1-9][0-9]*$/D', $tmdbId) ||
@@ -27,30 +29,9 @@ class MovieDetailsController extends Controller
         try {
             $movie = $tmdb->getMovieDetails((int) $tmdbId);
 
-            $catalog = app(MovieCatalogService::class);
-            $local = $catalog->resolveDetails($movie);
-            $localMovieId = $local->deactivated_at === null ? (string) $local->id : null;
-            if ($localMovieId !== null) {
-                $movie = array_replace($movie, $catalog->details($local));
+            if (mb_strlen($movie['title']) > 255) {
+                throw new UnexpectedValueException('Invalid normalized movie title.');
             }
-            $movie['source'] = 'tmdb';
-
-            $viewerReview = $localMovieId === null
-                ? null
-                : $request->user()->reviews()
-                    ->where('movie_id', $localMovieId)
-                    ->first(['id', 'rating', 'review_text']);
-
-            $movie['local_movie_id'] = $localMovieId === null ? null : (string) $localMovieId;
-            $movie['viewer_review'] = $viewerReview === null ? null : [
-                'id' => (string) $viewerReview->getKey(),
-                'rating' => $viewerReview->rating,
-                'review_text' => $viewerReview->review_text,
-            ];
-
-            return response()
-                ->json(['data' => $movie])
-                ->header('Cache-Control', 'private, no-store');
         } catch (TmdbRequestException $exception) {
             if ($exception->upstreamStatus === 404) {
                 return response()->json([
@@ -89,5 +70,39 @@ class MovieDetailsController extends Controller
                 'code' => 'MOVIE_DETAILS_UNAVAILABLE',
             ], 502);
         }
-    }
+
+        $local = Movie::query()->where('tmdb_id', $movie['tmdb_id'])->first();
+        $deactivated = $local?->deactivated_at !== null;
+        $localMovieId = null;
+
+        if ($local !== null && ! $deactivated) {
+            $localMovieId = (string) $local->getKey();
+            $stored = $catalog->details($local);
+
+            foreach (MovieCatalogService::METADATA as $field) {
+                if (in_array($field, $local->metadata_overrides, true)) {
+                    $movie[$field] = $stored[$field];
+                }
+            }
+        }
+
+        $viewerReview = $localMovieId === null
+            ? null
+            : $request->user()->reviews()
+                ->where('movie_id', $localMovieId)
+                ->first(['id', 'rating', 'review_text']);
+
+        $movie['source'] = 'tmdb';
+        $movie['local_movie_id'] = $localMovieId;
+        $movie['catalog_deactivated'] = $deactivated;
+        $movie['viewer_review'] = $viewerReview === null ? null : [
+            'id' => (string) $viewerReview->getKey(),
+            'rating' => $viewerReview->rating,
+            'review_text' => $viewerReview->review_text,
+        ];
+
+        return response()
+            ->json(['data' => $movie])
+            ->header('Cache-Control', 'private, no-store');
+            }
 }

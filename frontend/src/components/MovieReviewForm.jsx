@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { saveMovieReview } from '../services/reviews.js';
+import {
+    prepareReviewWrite,
+    resolveMovieForReview,
+    saveMovieReview,
+} from '../services/reviews.js';
 
 import './MovieReviewForm.css';
 
@@ -51,7 +55,7 @@ function readSaveError(error) {
     return { message: 'Unable to save your review. Try again.' };
 }
 
-export default function MovieReviewForm({ movieId, existingReview, onReload }) {
+export default function MovieReviewForm({ movieId, tmdbId, existingReview, onReload }) {
     const location = useLocation();
     const id = useId();
     const pending = useRef(null);
@@ -61,12 +65,23 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState('');
+    const [resolvedMovieId, setResolvedMovieId] = useState(movieId);
+    const [retryAt, setRetryAt] = useState(null);
 
     useEffect(() => () => pending.current?.abort(), []);
+    useEffect(() => {
+        if (retryAt === null) return;
+
+        const timer = window.setInterval(() => {
+            if (Date.now() >= retryAt) setRetryAt(null);
+        }, 250);
+
+        return () => window.clearInterval(timer);
+    }, [retryAt]);
 
     async function handleSubmit(event) {
         event.preventDefault();
-        if (pending.current || error?.action === 'reload') return;
+        if (pending.current || retryAt !== null || error?.action === 'reload') return;
 
         setSuccess('');
         setError(null);
@@ -92,9 +107,23 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
         pending.current = controller;
         setSaving(true);
 
+        let resolving = false;
+
         try {
+            await prepareReviewWrite(controller.signal);
+
+            let targetMovieId = resolvedMovieId;
+            if (reviewId === null && targetMovieId === null) {
+                resolving = true;
+                targetMovieId = await resolveMovieForReview(tmdbId, controller.signal);
+                if (controller.signal.aborted) return;
+
+                setResolvedMovieId(targetMovieId);
+                resolving = false;
+            }
+
             const saved = await saveMovieReview({
-                movieId,
+                movieId: targetMovieId,
                 reviewId,
                 rating: selectedRating,
                 reviewText: text || null,
@@ -108,7 +137,23 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
                 setSuccess(reviewId === null ? 'Review submitted.' : 'Review updated.');
             }
         } catch (saveError) {
-            if (!controller.signal.aborted) {
+            if (controller.signal.aborted) return;
+
+            const { status, headers } = saveError.response ?? {};
+
+            if (resolving && status === 503) {
+                const seconds = Number(headers?.['retry-after']);
+                const delay = Number.isSafeInteger(seconds) && seconds > 0 ? seconds : 30;
+                setRetryAt(Date.now() + delay * 1000);
+                setError({ message: 'Movie import is busy. Wait before trying again.' });
+            } else if (resolving && status === 404) {
+                setError({
+                    message: 'This movie is unavailable for new reviews.',
+                    action: 'reload',
+                });
+            } else if (resolving && ![401, 403, 419].includes(status)) {
+                setError({ message: 'Unable to add this movie to the catalog. Try again.' });
+            } else {
                 setError(readSaveError(saveError));
             }
         } finally {
@@ -212,7 +257,7 @@ export default function MovieReviewForm({ movieId, existingReview, onReload }) {
                     <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={error?.action === 'reload'}
+                        disabled={retryAt !== null || error?.action === 'reload'}
                     >
                         {saving ? 'Saving…' : reviewId === null ? 'Submit review' : 'Save changes'}
                     </button>

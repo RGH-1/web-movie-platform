@@ -5,7 +5,11 @@ import MovieReviewForm from './MovieReviewForm.jsx';
 export default function MovieReviewSection({ movie, onReload }) {
     const { user, loading, profileCompletion } = useAuth();
     const location = useLocation();
-    const movieId = movie.local_movie_id;
+    const movieId = movie.local_movie_id ?? null;
+    const tmdbId = movie.tmdb_id;
+    const hasLocalId = typeof movieId === 'string' && /^[1-9]\d*$/.test(movieId);
+    const canResolve = movieId === null &&
+        Number.isInteger(tmdbId) && tmdbId >= 1 && tmdbId <= 2147483647;
 
     let content;
     if (loading) {
@@ -16,13 +20,14 @@ export default function MovieReviewSection({ movie, onReload }) {
         );
     } else if (profileCompletion?.complete === false) {
         content = <Link to="/profile?edit=1">Complete your profile to leave a review</Link>;
-    } else if (typeof movieId !== 'string' || !/^[1-9]\d*$/.test(movieId)) {
+    } else if (movie.catalog_deactivated || (!hasLocalId && !canResolve)) {
         content = <p className="mb-0">Reviews are unavailable for this movie.</p>;
     } else {
         content = (
             <MovieReviewForm
-                key={`${user.id}:${movieId}`}
+                key={`${user.id}:${hasLocalId ? `local-${movieId}` : `tmdb-${tmdbId}`}`}
                 movieId={movieId}
+                tmdbId={tmdbId}
                 existingReview={movie.viewer_review}
                 onReload={onReload}
             />

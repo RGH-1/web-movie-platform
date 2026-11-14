@@ -1,24 +1,27 @@
-import {
-    act,
-    fireEvent,
-    render,
-    screen,
-    waitFor,
-} from "@testing-library/react";
-import { AxiosError } from "axios";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import MovieReviewSection from "../../src/components/MovieReviewSection.jsx";
-import { AuthContext } from "../../src/context/AuthContext.jsx";
-import MovieDetailNavigation from "../../src/pages/MovieDetailNavigation.jsx";
-import api from "../../src/services/api.js";
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { AxiosError } from 'axios';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import MovieReviewSection from '../../src/components/MovieReviewSection.jsx';
+import { AuthContext } from '../../src/context/AuthContext.jsx';
+import MovieDetailNavigation from '../../src/pages/MovieDetailNavigation.jsx';
+import api from '../../src/services/api.js';
 
 vi.mock("../../src/components/MovieStatusActions.jsx", () => ({
     default: () => null,
 }));
 
-const MOVIE_ID = "9007199254740993";
-const movie = { tmdb_id: 597, title: "Titanic", local_movie_id: MOVIE_ID };
+const MOVIE_ID = '9007199254740993';
+const movie = { tmdb_id: 597, title: 'Titanic', local_movie_id: MOVIE_ID };
+const unmapped = { ...movie, local_movie_id: null };
+const RESOLVE_URL = '/v1/movies/tmdb/597/resolve';
+const REVIEW_URL = `/v1/catalog/movies/${MOVIE_ID}/reviews`;
+const resolved = { data: { tmdb_id: 597, local_movie_id: MOVIE_ID } };
+
+function writeUrls() {
+    return requests.filter(({ method }) => method === 'post').map(({ url }) => url);
+}
+
 const session = { user: { id: 8 }, loading: false, profileCompletion: null };
 let originalAdapter;
 let requests;
@@ -152,9 +155,9 @@ it("prefills an existing review and patches its trimmed text", async () => {
     });
 });
 
-it("blocks a missing rating and overlong text before sending a request", () => {
-    openSection();
-    changeText("x".repeat(2001));
+it('blocks a missing rating and overlong text before sending a request', () => {
+    openSection({ details: unmapped });
+    changeText('x'.repeat(2001));
 
     fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
 
@@ -245,8 +248,8 @@ it("prompts a guest to sign in", () => {
     expect(requests).toHaveLength(0);
 });
 
-it("shows the unavailable state without a catalog mapping", () => {
-    openSection({ details: { ...movie, local_movie_id: null } });
+it('describes a deactivated mapping', () => {
+    openSection({ details: { ...unmapped, catalog_deactivated: true } });
 
     expect(
         screen.getByText("Reviews are unavailable for this movie."),
@@ -262,8 +265,116 @@ it("fills the stars up to the selected rating", () => {
     expect(screen.getAllByText("★")).toHaveLength(4);
     expect(screen.getAllByText("☆")).toHaveLength(1);
 
-    selectRating("2");
-    expect(screen.getByRole("radio", { name: "2 out of 5" })).toBeChecked();
-    expect(screen.getAllByText("★")).toHaveLength(2);
-    expect(screen.getAllByText("☆")).toHaveLength(3);
+    selectRating('2');
+    expect(screen.getByRole('radio', { name: '2 out of 5' })).toBeChecked();
+    expect(screen.getAllByText('★')).toHaveLength(2);
+    expect(screen.getAllByText('☆')).toHaveLength(3);
+});
+
+it('resolves only on valid submit and blocks repeated submits during import', async () => {
+    let finishResolve;
+    respond = (config) => {
+        if (config.url === RESOLVE_URL) {
+            return new Promise((resolve) => {
+                finishResolve = () => resolve(reply(config, 200, resolved));
+            });
+        }
+
+        return reply(config, 201, {
+            data: { id: '17', rating: 4, review_text: 'First review.' },
+        });
+    };
+
+    openSection({ details: unmapped });
+    selectRating('4');
+    changeText('First review.');
+    expect(requests).toHaveLength(0);
+
+    const form = screen.getByRole('form', { name: 'Movie review' });
+    fireEvent.submit(form);
+    await waitFor(() => expect(finishResolve).toBeTypeOf('function'));
+
+    fireEvent.submit(form);
+    expect(writeUrls()).toEqual([RESOLVE_URL]);
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+
+    await act(async () => finishResolve());
+
+    expect(await screen.findByText('Review submitted.')).toBeInTheDocument();
+    expect(writeUrls()).toEqual([RESOLVE_URL, REVIEW_URL]);
+    expect(requests.filter(({ url }) => url.endsWith('/sanctum/csrf-cookie'))).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+});
+
+it('preserves the draft and sends no review when resolution fails', async () => {
+    respond = (config) => reply(config, 502, {});
+    openSection({ details: unmapped });
+    selectRating('3');
+    changeText('Keep this draft.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit review' }));
+
+    expect(await screen.findByText('Unable to add this movie to the catalog. Try again.'))
+        .toBeInTheDocument();
+    expect(writeUrls()).toEqual([RESOLVE_URL]);
+    expect(screen.getByLabelText('Review (optional)')).toHaveValue('Keep this draft.');
+    expect(screen.getByRole('radio', { name: '3 out of 5' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Submit review' })).toBeEnabled();
+});
+
+it('honors the resolver Retry-After delay', async () => {
+    vi.useFakeTimers();
+
+    try {
+        respond = (config) => {
+            const response = { config, status: 503, data: {}, headers: { 'retry-after': '2' } };
+            throw new AxiosError('Rate limited', 'ERR_BAD_RESPONSE', config, null, response);
+        };
+
+        openSection({ details: unmapped });
+        selectRating('4');
+        const form = screen.getByRole('form', { name: 'Movie review' });
+
+        await act(async () => fireEvent.submit(form));
+
+        expect(screen.getByText('Movie import is busy. Wait before trying again.'))
+            .toBeInTheDocument();
+        act(() => vi.advanceTimersByTime(1000));
+        expect(screen.getByRole('button', { name: 'Submit review' })).toBeDisabled();
+        fireEvent.submit(form);
+        expect(writeUrls()).toEqual([RESOLVE_URL]);
+
+        act(() => vi.advanceTimersByTime(1000));
+        expect(screen.getByRole('button', { name: 'Submit review' })).toBeEnabled();
+    } finally {
+        vi.useRealTimers();
+    }
+});
+
+it('reuses the resolved ID when only the review write needs retrying', async () => {
+    let attempts = 0;
+    respond = (config) => {
+        if (config.url === RESOLVE_URL) return reply(config, 200, resolved);
+
+        attempts += 1;
+        if (attempts === 1) return reply(config, 500, {});
+
+        return reply(config, 201, {
+            data: { id: '17', rating: 4, review_text: 'Keep this draft.' },
+        });
+    };
+
+    openSection({ details: unmapped });
+    selectRating('4');
+    changeText('Keep this draft.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit review' }));
+    expect(await screen.findByText('Unable to save your review. Try again.'))
+        .toBeInTheDocument();
+    expect(screen.getByLabelText('Review (optional)')).toHaveValue('Keep this draft.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit review' }));
+
+    expect(await screen.findByText('Review submitted.')).toBeInTheDocument();
+    expect(writeUrls()).toEqual([RESOLVE_URL, REVIEW_URL, REVIEW_URL]);
 });

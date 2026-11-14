@@ -290,3 +290,7 @@ rating statistics retain their visible-only behavior.
 
 Successful details responses use `Cache-Control: private, no-store`.
 See the [reviews API](movie-reviews-contract.md) for write endpoints.
+
+Movie Details performs no catalog writes. A null `local_movie_id` with
+`catalog_deactivated: false` permits first-review resolution. A deactivated
+mapping returns `catalog_deactivated: true` and the form is unavailable.
