@@ -23,8 +23,20 @@ class MovieCatalogTest extends TestCase
         $this->assertIsString($first->id);
         $this->assertNull($first->tmdb_id);
         $this->assertNull($second->tmdb_id);
-        foreach (['overview', 'release_date', 'runtime_minutes', 'poster_url',
-            'backdrop_url', 'director', 'vote_average', 'trailer', 'tmdb_synced_at', 'deactivated_at'] as $field) {
+        foreach (
+            [
+                'overview',
+                'release_date',
+                'runtime_minutes',
+                'poster_url',
+                'backdrop_url',
+                'director',
+                'vote_average',
+                'trailer',
+                'tmdb_synced_at',
+                'deactivated_at'
+            ] as $field
+        ) {
             $this->assertNull($first->$field);
         }
         $this->assertSame([], $first->genres);
@@ -69,20 +81,22 @@ class MovieCatalogTest extends TestCase
 
     public function test_invalid_source_identity_and_numeric_values_are_rejected(): void
     {
-        foreach ([
-            ['source' => 'unknown'],
-            ['source' => 'tmdb'],
-            ['source' => 'tmdb', 'tmdb_id' => 0],
-            ['source' => 'tmdb', 'tmdb_id' => 2147483648],
-            ['source' => 'tmdb', 'tmdb_id' => 1.5],
-            ['source' => 'local', 'tmdb_id' => 42],
-            ['source' => 'local', 'vote_average' => 5],
-            ['source' => 'local', 'tmdb_synced_at' => now()],
-            ['runtime_minutes' => 0],
-            ['runtime_minutes' => 1.5],
-            ['source' => 'tmdb', 'tmdb_id' => 42, 'vote_average' => 10.001],
-            ['title' => '   '],
-        ] as $invalid) {
+        foreach (
+            [
+                ['source' => 'unknown'],
+                ['source' => 'tmdb'],
+                ['source' => 'tmdb', 'tmdb_id' => 0],
+                ['source' => 'tmdb', 'tmdb_id' => 2147483648],
+                ['source' => 'tmdb', 'tmdb_id' => 1.5],
+                ['source' => 'local', 'tmdb_id' => 42],
+                ['source' => 'local', 'vote_average' => 5],
+                ['source' => 'local', 'tmdb_synced_at' => now()],
+                ['runtime_minutes' => 0],
+                ['runtime_minutes' => 1.5],
+                ['source' => 'tmdb', 'tmdb_id' => 42, 'vote_average' => 10.001],
+                ['title' => '   '],
+            ] as $invalid
+        ) {
             try {
                 Movie::factory()->create($invalid);
                 $this->fail('Invalid catalog values were saved.');
@@ -136,12 +150,14 @@ class MovieCatalogTest extends TestCase
         // Test doubles stand in for the G/H/I models until their work items ship.
         $movie = new class extends Movie
         {
+
             protected function newRelatedInstance($class)
             {
                 $related = new class extends Model {};
+
                 $related->setTable(match ($class) {
                     'App\\Models\\Review' => 'reviews',
-                    'App\\Models\\WatchlistEntry' => 'watchlist_entries',
+                    'App\\Models\\UserMovieStatus' => 'user_movie_statuses',
                     'App\\Models\\CustomList' => 'custom_lists',
                 });
 
@@ -151,7 +167,7 @@ class MovieCatalogTest extends TestCase
         $movie->setTable('movies');
         $movie->id = '123';
         $this->assertSame('reviews.movie_id', $movie->reviews()->getQualifiedForeignKeyName());
-        $this->assertSame('watchlist_entries.movie_id', $movie->watchlistEntries()->getQualifiedForeignKeyName());
+        $this->assertSame('user_movie_statuses.movie_id', $movie->userStatuses()->getQualifiedForeignKeyName());
         $this->assertSame('list_movies', $movie->customLists()->getTable());
         $this->assertSame('movie_id', $movie->customLists()->getForeignPivotKeyName());
         $this->assertSame('list_id', $movie->customLists()->getRelatedPivotKeyName());
@@ -164,8 +180,12 @@ class MovieCatalogTest extends TestCase
         }
         $this->expectException(QueryException::class);
         DB::table('movies')->insert([
-            'source' => 'local', 'tmdb_id' => 42, 'title' => 'Invalid identity',
-            'genres' => '[]', 'cast' => '[]', 'metadata_overrides' => '[]',
+            'source' => 'local',
+            'tmdb_id' => 42,
+            'title' => 'Invalid identity',
+            'genres' => '[]',
+            'cast' => '[]',
+            'metadata_overrides' => '[]',
         ]);
     }
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import MovieFeed from '../components/MovieFeed';
 import MoviePagination from '../components/MoviePagination';
+import MovieFilters from '../components/MovieFilters';
 import { searchMovies } from '../services/movies';
 
 const STORAGE_KEY = 'movieDiscoveryState';
@@ -34,14 +35,10 @@ function getSavedState() {
 
 function MovieDiscovery() {
     const [category, setCategory] = useState('search');
-    const initialState = useRef(undefined);
+    const [saved] = useState(getSavedState);
 
-    if (initialState.current === undefined) {
-        initialState.current = getSavedState();
-    }
 
-    const saved = initialState.current;
-
+    const [mode, setMode] = useState('search');
     const [query, setQuery] = useState(saved?.query ?? '');
     const [submittedQuery, setSubmittedQuery] = useState(saved?.submittedQuery ?? '');
     const [movies, setMovies] = useState(saved?.movies ?? []);
@@ -233,7 +230,25 @@ function MovieDiscovery() {
 
             {category !== 'search' && <MovieFeed key={category} category={category} />}
 
-            <div hidden={category !== 'search'}>
+            {category === 'search' && (
+                <>
+                    <div className="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Discovery mode">
+                        <button type="button" className="btn btn-outline-primary"
+                            aria-pressed={mode === 'search'}
+                            onClick={() => setMode('search')}>
+                            Search by title
+                        </button>
+                        <button type="button" className="btn btn-outline-primary"
+                            aria-pressed={mode === 'browse'}
+                            onClick={() => setMode('browse')}>
+                            Browse by filters
+                        </button>
+                    </div>
+                    {mode === 'browse' && <MovieFilters />}
+                </>
+            )}
+
+            <div hidden={category !== 'search' || mode !== 'search'}>
             <form onSubmit={handleSubmit} className="mb-4" role="search">
                 <label htmlFor="movie-query" className="form-label">
                     Movie title
