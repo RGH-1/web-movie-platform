@@ -10,6 +10,10 @@ vi.mock("../../src/services/movies", () => ({
     getMovieDetails: vi.fn(),
 }));
 
+vi.mock("../../src/components/MovieStatusActions.jsx", () => ({
+    default: () => null,
+}));
+
 function renderMovieDetails(url) {
     return render(
         <MemoryRouter initialEntries={[url]}>

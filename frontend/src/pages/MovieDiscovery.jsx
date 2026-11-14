@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
+import MovieFeed from '../components/MovieFeed';
+import MoviePagination from '../components/MoviePagination';
+import MovieFilters from '../components/MovieFilters';
 import { searchMovies } from '../services/movies';
 
 const STORAGE_KEY = 'movieDiscoveryState';
@@ -31,14 +34,11 @@ function getSavedState() {
 }
 
 function MovieDiscovery() {
-    const initialState = useRef(undefined);
+    const [category, setCategory] = useState('search');
+    const [saved] = useState(getSavedState);
 
-    if (initialState.current === undefined) {
-        initialState.current = getSavedState();
-    }
 
-    const saved = initialState.current;
-
+    const [mode, setMode] = useState('search');
     const [query, setQuery] = useState(saved?.query ?? '');
     const [submittedQuery, setSubmittedQuery] = useState(saved?.submittedQuery ?? '');
     const [movies, setMovies] = useState(saved?.movies ?? []);
@@ -208,7 +208,7 @@ function MovieDiscovery() {
                 <div>
                     <h1 className="fs-2 mb-2">Discover Movies</h1>
                     <p className="text-body-secondary">
-                        Search for movies and explore their details.
+                        Search movies or browse popular and upcoming releases.
                     </p>
                 </div>
 
@@ -217,6 +217,38 @@ function MovieDiscovery() {
                 </Link>
             </div>
 
+            <nav className="d-flex flex-wrap gap-2 mb-4" aria-label="Movie categories">
+                {['search', 'popular', 'upcoming'].map((value) => (
+                    <button key={value} type="button"
+                        className={`btn ${category === value ? 'btn-primary' : 'btn-outline-primary'}`}
+                        aria-pressed={category === value}
+                        onClick={() => setCategory(value)}>
+                        {value === 'search' ? 'Title search' : value === 'popular' ? 'Popular' : 'Upcoming'}
+                    </button>
+                ))}
+            </nav>
+
+            {category !== 'search' && <MovieFeed key={category} category={category} />}
+
+            {category === 'search' && (
+                <>
+                    <div className="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Discovery mode">
+                        <button type="button" className="btn btn-outline-primary"
+                            aria-pressed={mode === 'search'}
+                            onClick={() => setMode('search')}>
+                            Search by title
+                        </button>
+                        <button type="button" className="btn btn-outline-primary"
+                            aria-pressed={mode === 'browse'}
+                            onClick={() => setMode('browse')}>
+                            Browse by filters
+                        </button>
+                    </div>
+                    {mode === 'browse' && <MovieFilters />}
+                </>
+            )}
+
+            <div hidden={category !== 'search' || mode !== 'search'}>
             <form onSubmit={handleSubmit} className="mb-4" role="search">
                 <label htmlFor="movie-query" className="form-label">
                     Movie title
@@ -309,35 +341,12 @@ function MovieDiscovery() {
                     )}
 
                     {totalPages > 1 && (
-                        <nav
-                            className="d-flex justify-content-center align-items-center gap-3 mt-5"
-                            aria-label="Movie results pagination"
-                        >
-                            <button
-                                type="button"
-                                className="btn btn-outline-primary"
-                                disabled={page <= 1 || loading}
-                                onClick={() => changePage(page - 1)}
-                            >
-                                Previous
-                            </button>
-
-                            <span aria-live="polite">
-                                Page {page} of {totalPages}
-                            </span>
-
-                            <button
-                                type="button"
-                                className="btn btn-outline-primary"
-                                disabled={page >= totalPages || loading}
-                                onClick={() => changePage(page + 1)}
-                            >
-                                Next
-                            </button>
-                        </nav>
+                        <MoviePagination page={page} totalPages={totalPages}
+                            loading={loading} onPageChange={changePage} />
                     )}
                 </>
             )}
+            </div>
         </main>
     );
 }
