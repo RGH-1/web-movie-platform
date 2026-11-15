@@ -12,6 +12,7 @@ import ProfilePage from "./pages/ProfilePage";
 import MovieDiscovery from "./pages/MovieDiscovery";
 import MovieDetailNavigation from "./pages/MovieDetailNavigation";
 import MyMoviesPage from "./pages/MyMoviesPage";
+import MyListsPage from "./pages/MyListsPage";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -46,9 +47,14 @@ function Home() {
                 </Link>
 
                 {isAuthenticated && (
-                    <Link to="/my-movies" className="btn btn-primary">
-                        My Movies
-                    </Link>
+                    <>
+                        <Link to="/my-lists" className="btn btn-outline-primary">
+                            My Lists
+                        </Link>
+                        <Link to="/my-movies" className="btn btn-primary">
+                            My Movies
+                        </Link>
+                    </>
                 )}
             </div>
 
@@ -75,6 +81,7 @@ function App() {
                     element={<MovieDetailNavigation />}
                 />
                 <Route path="/my-movies" element={<MyMoviesPage />} />
+                <Route path="/my-lists" element={<MyListsPage />} />
             </Route>
 
             <Route
