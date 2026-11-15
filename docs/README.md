@@ -19,6 +19,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Popular and Upcoming frontend and testing (AB#74)](frontend/movie-feeds.md)
 - [Movie discovery API](api/movie-discovery-contract.md)
 - [Custom movie lists schema (AB#90)](architecture/movie-lists-schema.md)
-
-
 - [Custom movie lists API (AB#91)](api/movie-lists-contract.md)
+- [My Lists management and testing (AB#92)](frontend/my-lists.md)
