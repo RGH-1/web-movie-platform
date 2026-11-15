@@ -26,6 +26,7 @@ it('shows loading, metadata, visibility, and movie count', async () => {
     open();
     expect(screen.getByRole('status')).toHaveTextContent('Loading your lists');
     const card = await screen.findByRole('article', { name: 'Weekend' });
+    expect(screen.getByRole('link', { name: 'Weekend' })).toHaveAttribute('href', `/lists/${list.id}`);
     expect(card).toHaveTextContent('Private');
     expect(card).toHaveTextContent('2 movie(s)');
     expect(card).toHaveTextContent('No description.');

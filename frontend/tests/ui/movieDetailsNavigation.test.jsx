@@ -139,3 +139,5 @@ describe("Movie details navigation (AB#56)", () => {
         );
     });
 });
+
+vi.mock('../../src/components/AddToList', () => ({ default: () => null }));

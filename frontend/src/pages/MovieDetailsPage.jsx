@@ -84,9 +84,9 @@ export default function MovieDetailsPage({ movie, children }) {
           <h2 className="h5 mb-2">Genres</h2>
           {genres.length ? (
             <ul className="list-unstyled d-flex flex-wrap gap-2 mb-4">
-              {genres.map((genre) => (
+              {genres.map((genre, index) => (
                 <li
-                  key={genre.tmdb_id}
+                  key={genre.tmdb_id ?? `local-genre-${index}`}
                   className="badge text-bg-secondary text-wrap"
                 >
                   {genre.name}
@@ -110,9 +110,9 @@ export default function MovieDetailsPage({ movie, children }) {
         </h2>
         {cast.length ? (
           <ul className="row g-3 list-unstyled">
-            {cast.map((person) => (
+            {cast.map((person, index) => (
               <li
-                key={person.tmdb_person_id}
+                key={person.tmdb_person_id ?? `local-person-${index}`}
                 className="col-6 col-sm-4 col-md-3"
               >
                 <article className="card h-100">

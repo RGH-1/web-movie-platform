@@ -25,9 +25,9 @@ The existing MoviePagination control supports direct page jumps. After deletion,
 an empty page beyond the last page is redirected to the last available page.
 The grid and forms use Bootstrap responsive layouts and labeled native controls.
 
-Agreed scope: list-details links and their destination page are added in AB#93.
-There are no placeholder/broken details links in AB#92. Add-to-list and membership
-management also remain in AB#93.
+AB#93 now links each list name to its working `/lists/:listId` details page.
+See [list details and Add to List](list-details.md) for sharing and membership workflows.
+These were intentionally deferred while implementing AB#92.
 
 ## Automated checks
 

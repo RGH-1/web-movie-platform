@@ -84,3 +84,5 @@ describe("Movie details complete navigation flow (AB#56)", () => {
         expect(getMovieDetails).toHaveBeenCalledTimes(1);
     });
 });
+
+vi.mock('../../src/components/AddToList', () => ({ default: () => null }));

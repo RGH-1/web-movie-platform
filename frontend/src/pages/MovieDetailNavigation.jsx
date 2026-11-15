@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 
-import { getMovieDetails } from "../services/movies";
+import { getMovieDetails, getLocalMovieDetails } from "../services/movies";
 import MovieDetailsPage from "./MovieDetailsPage";
 import MovieReviewsPanel from "../components/MovieReviewsPanel.jsx";
 import MovieStatusActions from "../components/MovieStatusActions.jsx";
+import AddToList from "../components/AddToList";
 
 function MovieDetailNavigation() {
-    const { tmdbId } = useParams();
+    const { tmdbId, movieId: localMovieId } = useParams();
+    const isLocal = localMovieId !== undefined;
+    const routeId = isLocal ? `local-${localMovieId}` : tmdbId;
     const location = useLocation();
     const movieId = Number(tmdbId);
-    const isValidId =
-        /^\d+$/.test(tmdbId || "") &&
+    const isValidId = isLocal
+        ? /^[1-9][0-9]{0,18}$/.test(localMovieId) && (localMovieId.length < 19 || localMovieId <= '9223372036854775807')
+        : /^\d+$/.test(tmdbId || "") &&
         Number.isSafeInteger(movieId) &&
         movieId > 0 &&
         movieId <= 2147483647;
@@ -29,10 +33,10 @@ function MovieDetailNavigation() {
         if (!isValidId) return;
         let isCurrent = true;
 
-        getMovieDetails(movieId)
+        (isLocal ? getLocalMovieDetails(localMovieId) : getMovieDetails(movieId))
             .then((movie) => {
                 if (!isCurrent) return;
-                setResult({ tmdbId, attempt, movie, error: null });
+                setResult({ tmdbId: routeId, attempt, movie, error: null });
             })
             .catch((error) => {
                 if (!isCurrent) return;
@@ -64,7 +68,7 @@ function MovieDetailNavigation() {
                         : null;
 
                 setResult({
-                    tmdbId,
+                    tmdbId: routeId,
                     attempt,
                     movie: null,
                     error: message,
@@ -76,7 +80,7 @@ function MovieDetailNavigation() {
         return () => {
             isCurrent = false;
         };
-    }, [tmdbId, movieId, isValidId, attempt]);
+    }, [tmdbId, movieId, isValidId, attempt, isLocal, localMovieId, routeId]);
 
     useEffect(() => {
         if (!result.retryAt) return;
@@ -104,7 +108,7 @@ function MovieDetailNavigation() {
         );
     }
 
-    if (result.tmdbId !== tmdbId || result.attempt !== attempt) {
+    if (result.tmdbId !== routeId || result.attempt !== attempt) {
         return (
             <main className="container py-5">
                 <p role="status">Loading movie details...</p>
@@ -162,6 +166,8 @@ function MovieDetailNavigation() {
                     key={result.movie.local_movie_id ?? tmdbId}
                     movie={result.movie}
                 />
+
+                <AddToList key={`lists-${routeId}`} movie={result.movie} />
 
                 {Object.hasOwn(result.movie, "local_movie_id") && (
                     <MovieReviewsPanel
