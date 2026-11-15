@@ -15,9 +15,9 @@ vi.mock("../../src/hooks/useAuth", () => ({
 let signIn;
 
 // Render the login page with React Router.
-function renderLogin() {
+function renderLogin(initialPath = "/login") {
     return render(
-        <MemoryRouter initialEntries={["/login"]}>
+        <MemoryRouter initialEntries={[initialPath]}>
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<h1>Home</h1>} />
@@ -255,4 +255,72 @@ describe("Login flow (AB#29)", () => {
             "TestPassword123!",
         );
     });
+
+    it.each([
+        ["Google", "google"],
+        ["GitHub", "github"],
+        ["Facebook", "facebook"],
+    ])(
+        "renders the %s OAuth button with the correct Laravel redirect",
+        (name, provider) => {
+            renderLogin();
+
+            const link = screen.getByRole("link", {
+                name: `Continue with ${name}`,
+            });
+
+            const apiBaseUrl =
+                import.meta.env.VITE_API_BASE_URL ||
+                "http://localhost:8000/api";
+
+            const backendOrigin = new URL(apiBaseUrl).origin;
+
+            expect(link).toHaveAttribute(
+                "href",
+                `${backendOrigin}/auth/${provider}/redirect`,
+            );
+
+            expect(signIn).not.toHaveBeenCalled();
+        },
+    );
+
+    it.each([
+        ["cancelled", "Social login was cancelled. Please try again."],
+        [
+            "account_exists",
+            "An account with this email already exists. Please use its existing login method.",
+        ],
+        [
+            "invalid_state",
+            "Your login session expired or was invalid. Please try again.",
+        ],
+        [
+            "provider_failed",
+            "Authentication with the provider failed. Please try again.",
+        ],
+    ])(
+        "displays a safe message for OAuth error %s",
+        async (errorCode, expectedMessage) => {
+            renderLogin(`/login?oauth_error=${errorCode}`);
+
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                expectedMessage,
+            );
+
+            expect(signIn).not.toHaveBeenCalled();
+        },
+    );
+
+    it.each(["unexpected_error", "constructor", "__proto__"])(
+        "handles unknown OAuth error code %s safely",
+        async (errorCode) => {
+            renderLogin(`/login?oauth_error=${errorCode}`);
+
+            expect(await screen.findByRole("alert")).toHaveTextContent(
+                "Social login failed. Please try again.",
+            );
+
+            expect(signIn).not.toHaveBeenCalled();
+        },
+    );
 });

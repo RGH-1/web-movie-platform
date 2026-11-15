@@ -229,4 +229,32 @@ describe("Registration flow (AB#29)", () => {
             screen.queryByText("Sensitive internal database error"),
         ).not.toBeInTheDocument();
     });
+
+    it.each([
+        ["Google", "google"],
+        ["GitHub", "github"],
+        ["Facebook", "facebook"],
+    ])(
+        "renders the %s OAuth registration button with the correct Laravel redirect",
+        (name, provider) => {
+            renderRegistration();
+
+            const link = screen.getByRole("link", {
+                name: `Continue with ${name}`,
+            });
+
+            const apiBaseUrl =
+                import.meta.env.VITE_API_BASE_URL ||
+                "http://localhost:8000/api";
+
+            const backendOrigin = new URL(apiBaseUrl).origin;
+
+            expect(link).toHaveAttribute(
+                "href",
+                `${backendOrigin}/auth/${provider}/redirect`,
+            );
+
+            expect(signUp).not.toHaveBeenCalled();
+        },
+    );
 });

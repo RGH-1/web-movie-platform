@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import SocialLoginButtons from "../components/SocialLoginButtons";
 
 // Validate login fields before calling Laravel.
 function validateForm(form) {
@@ -32,6 +33,26 @@ function validateForm(form) {
     return errors;
 }
 
+const oauthErrorMessages = {
+    cancelled: "Social login was cancelled. Please try again.",
+    account_exists:
+        "An account with this email already exists. Please use its existing login method.",
+    account_conflict:
+        "This account could not be created because of a conflict. Please try again.",
+    provider_unavailable: "This login provider is currently unavailable.",
+    provider_failed:
+        "Authentication with the provider failed. Please try again.",
+    invalid_state:
+        "Your login session expired or was invalid. Please try again.",
+    invalid_identity: "We could not verify your social account identity.",
+    email_required:
+        "Your social account did not provide a required email address.",
+    invalid_email: "Your social account provided an invalid email address.",
+    email_unverified:
+        "Your Google email address must be verified before you can register.",
+    account_unavailable: "Your linked account is currently unavailable.",
+};
+
 function Login() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -44,6 +65,16 @@ function Login() {
     const [errors, setErrors] = useState({});
     const [generalError, setGeneralError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const oauthError = new URLSearchParams(location.search).get("oauth_error");
+
+    const oauthErrorMessage = oauthError
+        ? Object.hasOwn(oauthErrorMessages, oauthError)
+            ? oauthErrorMessages[oauthError]
+            : "Social login failed. Please try again."
+        : "";
+
+    const displayedError = generalError || oauthErrorMessage;
 
     // Update the field the user is typing into.
     function handleChange(event) {
@@ -60,6 +91,21 @@ function Login() {
         }));
 
         setGeneralError("");
+        if (oauthError) {
+            const params = new URLSearchParams(location.search);
+            params.delete("oauth_error");
+
+            navigate(
+                {
+                    pathname: location.pathname,
+                    search: params.toString() ? `?${params.toString()}` : "",
+                },
+                {
+                    replace: true,
+                    state: location.state,
+                },
+            );
+        }
     }
 
     // Handle the form submission.
@@ -157,12 +203,12 @@ function Login() {
                                 Log in to your movie discovery account.
                             </p>
 
-                            {generalError && (
+                            {displayedError && (
                                 <div
                                     className="alert alert-danger"
                                     role="alert"
                                 >
-                                    {generalError}
+                                    {displayedError}
                                 </div>
                             )}
 
@@ -237,6 +283,8 @@ function Login() {
                                     )}
                                 </button>
                             </form>
+
+                            <SocialLoginButtons />
 
                             <p className="text-center mt-4 mb-0">
                                 Don't have an account?{" "}
