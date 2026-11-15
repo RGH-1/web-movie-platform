@@ -81,4 +81,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserMovieStatus::class);
     }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
 }
