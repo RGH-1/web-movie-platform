@@ -167,7 +167,7 @@ export default function MyListsPage() {
                             <div key={list.id} className="col-12 col-md-6 col-lg-4">
                                 <article className="card h-100" aria-label={list.name}>
                                     <div className="card-body d-flex flex-column">
-                                        <h2 className="h5 text-break">{list.name}</h2>
+                                        <h2 className="h5 text-break"><Link to={`/lists/${list.id}`}>{list.name}</Link></h2>
                                         <p className="text-break" style={{ whiteSpace: 'pre-wrap' }}>{list.description || 'No description.'}</p>
                                         <p><span className={`badge ${list.is_public ? 'text-bg-success' : 'text-bg-secondary'}`}>{list.is_public ? 'Public' : 'Private'}</span></p>
                                         <p>{list.movie_count} movie(s)</p>

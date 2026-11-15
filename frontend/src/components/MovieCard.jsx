@@ -9,6 +9,12 @@ function MovieCard({ movie }) {
     const movieId = Number(movie.tmdb_id);
     const hasValidId = Number.isSafeInteger(movieId) && movieId > 0;
 
+    const localId = movie.local_movie_id;
+    const hasLocalId = typeof localId === 'string' && /^[1-9][0-9]{0,18}$/.test(localId) &&
+        (localId.length < 19 || localId <= '9223372036854775807');
+    const detailUrl = movie.is_active === false ? null
+        : hasValidId ? `/movies/${movieId}` : hasLocalId ? `/movies/local/${localId}` : null;
+
     return (
         <article className="card h-100 shadow-sm">
             {movie.poster_url ? (
@@ -47,9 +53,9 @@ function MovieCard({ movie }) {
                 </p>
 
                 <div className="mt-auto pt-3">
-                    {hasValidId ? (
+                    {detailUrl ? (
                         <Link
-                            to={`/movies/${movieId}`}
+                            to={detailUrl}
                             className="btn btn-primary w-100"
                             aria-label={`View details for ${movie.title}`}
                         >

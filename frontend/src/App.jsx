@@ -13,6 +13,7 @@ import MovieDiscovery from "./pages/MovieDiscovery";
 import MovieDetailNavigation from "./pages/MovieDetailNavigation";
 import MyMoviesPage from "./pages/MyMoviesPage";
 import MyListsPage from "./pages/MyListsPage";
+import ListDetailsPage from "./pages/ListDetailsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 
 import { useAuth } from "./hooks/useAuth";
@@ -84,6 +85,8 @@ function App() {
                 />
                 <Route path="/my-movies" element={<MyMoviesPage />} />
                 <Route path="/my-lists" element={<MyListsPage />} />
+                <Route path="/lists/:listId" element={<ListDetailsPage />} />
+                <Route path="/movies/local/:movieId" element={<MovieDetailNavigation />} />
             </Route>
 
             <Route
