@@ -354,3 +354,13 @@ feature routes. They verify required-field validation, optional-field
 independence, guest rejection, incomplete-profile rejection, profile
 repair and immediate access recovery, client override rejection, and
 continued access to public health/diagnostic endpoints.
+
+## Public author profile (AB#64)
+
+`GET /api/v1/users/{userId}/profile` is public and returns
+`{"data":{"id":"8","name":"Review author"}}`. The identifier is a decimal
+string. The response contains only the account ID and display name.
+Invalid or missing IDs return `404`.
+
+Review author links open `/users/{userId}` in React. The authenticated
+profile editor continues to use `/profile` and `/api/v1/me/profile`.

@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 import MovieReviewForm from './MovieReviewForm.jsx';
 
-export default function MovieReviewSection({ movie, onReload }) {
+export default function MovieReviewSection({ movie, onReload, onSaved, onCancel }) {
     const { user, loading, profileCompletion } = useAuth();
     const location = useLocation();
     const movieId = movie.local_movie_id ?? null;
@@ -30,6 +30,8 @@ export default function MovieReviewSection({ movie, onReload }) {
                 tmdbId={tmdbId}
                 existingReview={movie.viewer_review}
                 onReload={onReload}
+                onSaved={onSaved}
+                onCancel={onCancel}
             />
         );
     }

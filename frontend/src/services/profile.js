@@ -43,3 +43,17 @@ export async function updateProfile(fields, { signal } = {}) {
   if (!profile) throw new Error('The save response did not include a profile.');
   return profile;
 }
+
+export async function getPublicProfile(userId, { signal } = {}) {
+  const response = await api.get(
+    `/v1/users/${encodeURIComponent(userId)}/profile`,
+    { signal },
+  );
+  const profile = response.data?.data;
+
+  if (profile?.id !== userId || typeof profile.name !== 'string') {
+    throw new Error('Invalid public profile response.');
+  }
+
+  return { id: profile.id, name: profile.name };
+}

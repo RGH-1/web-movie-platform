@@ -66,3 +66,20 @@ If resolution succeeds and the review write fails, the catalog row persists
 and a retry from the same form reuses its ID. A duplicate review still offers
 the reload-to-edit action. After a successful save, reopening Movie Details
 prefills the owner's review.
+
+## Movie Details review management (AB#64)
+
+Movie Details loads visible reviews by canonical `local_movie_id`. The
+platform score is displayed out of 5 with the backend's movie-wide rating
+count. The TMDB score is displayed separately out of 10.
+
+Each review shows its rating, author, creation time, and optional text.
+Rating-only cards show “Rating only.” Author links use the public
+profile route. The viewer’s edit and delete controls come from the
+authenticated `viewer_review` field, so they work even when the viewer’s
+review is outside the visible page or hidden.
+
+Deletion requires confirmation. After a successful create, edit, or
+delete, the review section reloads page 1 and its statistics from the API.
+For a first review imported through AB#102, the list uses the canonical
+movie ID returned by the successful submission.

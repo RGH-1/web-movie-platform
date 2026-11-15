@@ -55,7 +55,7 @@ function readSaveError(error) {
     return { message: 'Unable to save your review. Try again.' };
 }
 
-export default function MovieReviewForm({ movieId, tmdbId, existingReview, onReload }) {
+export default function MovieReviewForm({ movieId, tmdbId, existingReview, onReload, onSaved, onCancel }) {
     const location = useLocation();
     const id = useId();
     const pending = useRef(null);
@@ -135,6 +135,7 @@ export default function MovieReviewForm({ movieId, tmdbId, existingReview, onRel
                 setRating(String(saved.rating));
                 setReviewText(saved.review_text ?? '');
                 setSuccess(reviewId === null ? 'Review submitted.' : 'Review updated.');
+                onSaved?.(saved, targetMovieId);
             }
         } catch (saveError) {
             if (controller.signal.aborted) return;
@@ -253,7 +254,7 @@ export default function MovieReviewForm({ movieId, tmdbId, existingReview, onRel
                     )}
                 </div>
 
-                <div className="d-grid d-sm-flex">
+                <div className="d-grid d-sm-flex gap-2">
                     <button
                         type="submit"
                         className="btn btn-primary"
@@ -261,6 +262,12 @@ export default function MovieReviewForm({ movieId, tmdbId, existingReview, onRel
                     >
                         {saving ? 'Saving…' : reviewId === null ? 'Submit review' : 'Save changes'}
                     </button>
+
+                    {onCancel && (
+                        <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
+                            Cancel edit
+                        </button>
+                    )}
                 </div>
             </fieldset>
             <div role="status" className="text-success mt-2">
