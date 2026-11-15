@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ResolveTmdbMovieController;
+use App\Http\Controllers\PublicProfileController;
 
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
@@ -41,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/movies/popular', [MovieFeedController::class, 'popular']);
     Route::get('/movies/upcoming', [MovieFeedController::class, 'upcoming']);
     Route::get('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'index']);
+    Route::get('/users/{userId}/profile', PublicProfileController::class);
 
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
