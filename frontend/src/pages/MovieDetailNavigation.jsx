@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 
 import { getMovieDetails } from "../services/movies";
 import MovieDetailsPage from "./MovieDetailsPage";
-import MovieReviewSection from "../components/MovieReviewSection.jsx";
+import MovieReviewsPanel from "../components/MovieReviewsPanel.jsx";
 import MovieStatusActions from "../components/MovieStatusActions.jsx";
 
 function MovieDetailNavigation() {
@@ -57,10 +57,10 @@ function MovieDetailNavigation() {
                 const retryAt =
                     status === 503
                         ? Date.now() +
-                          (Number.isSafeInteger(seconds) && seconds > 0
-                              ? seconds
-                              : 30) *
-                              1000
+                        (Number.isSafeInteger(seconds) && seconds > 0
+                            ? seconds
+                            : 30) *
+                        1000
                         : null;
 
                 setResult({
@@ -164,7 +164,7 @@ function MovieDetailNavigation() {
                 />
 
                 {Object.hasOwn(result.movie, "local_movie_id") && (
-                    <MovieReviewSection
+                    <MovieReviewsPanel
                         movie={result.movie}
                         onReload={() => setAttempt((value) => value + 1)}
                     />
