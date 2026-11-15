@@ -23,3 +23,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [My Lists management and testing (AB#92)](frontend/my-lists.md)
 - [Movie review and moderation verification (AB#65)](frontend/movie-review-testing.md)
 - [List details and Add to List (AB#93)](frontend/list-details.md)
+
+- [List management and visibility verification (AB#94)](frontend/list-management-testing.md)
