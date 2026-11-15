@@ -47,7 +47,7 @@ included. These simulated responses do not establish live TMDB access.
 
 ## Manual checks all passed
 
-1. Start Laravel and Vite using matching 127.0.0.1 hostnames. Sign in.
+1. Start Laravel and Vite using matching localhost hostnames. Sign in.
 2. Search Interstellar, open View Details, and confirm the URL, title,
    metadata, and cast match the Laravel response for that ID.
 3. Open Watch Trailer, if available. Confirm YouTube opens the intended

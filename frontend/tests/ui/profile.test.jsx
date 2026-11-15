@@ -193,7 +193,7 @@ describe('profile editing and errors', () => {
     expect(screen.getByText('Updated Sam')).toBeInTheDocument();
     expect(screen.getByText('Movie fan')).toBeInTheDocument();
     expect(patches).toEqual([{
-      name: 'Updated Sam', email: initialProfile.email, bio: 'Movie fan', favorite_genres: ['drama'],
+      name: 'Updated Sam', bio: 'Movie fan', favorite_genres: ['drama'],
     }]);
     const csrfIndex = requests.findIndex((request) => request.url.endsWith('/sanctum/csrf-cookie'));
     const patchIndex = requests.findIndex((request) => request.method === 'patch');
@@ -213,6 +213,22 @@ describe('profile editing and errors', () => {
     expect(screen.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('Enter a name between 1 and 255 characters.')).toBeInTheDocument();
     expect(patches).toEqual([]);
+  });
+
+  it('displays a null email and saves unrelated Facebook profile edits without submitting email', async () => {
+    const user = userEvent.setup();
+    savedProfile.email = null;
+    openProfile();
+    expect(await screen.findByText('Not provided')).toBeInTheDocument();
+    await openEditor(user);
+    expect(screen.getByLabelText('Email')).toHaveValue('');
+    await user.clear(screen.getByLabelText('Name'));
+    await user.type(screen.getByLabelText('Name'), 'Facebook Sam');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Your profile was saved.')).toBeInTheDocument();
+    expect(patches).toEqual([{
+      name: 'Facebook Sam', bio: null, favorite_genres: [],
+    }]);
   });
 
   it('shows Laravel email and indexed genre errors, keeps drafts, and never claims success', async () => {

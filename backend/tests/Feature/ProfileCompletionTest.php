@@ -56,6 +56,22 @@ class ProfileCompletionTest extends TestCase
         }
     }
 
+    public function test_facebook_linked_user_without_email_is_complete_and_can_access_features(): void
+    {
+        $user = User::factory()->create(['email' => null]);
+        $user->socialAccounts()->create([
+            'provider' => 'facebook',
+            'provider_user_id' => 'facebook-no-email-123',
+            'provider_email' => null,
+        ]);
+
+        $this->assertSame([], $user->fresh()->incompleteProfileFields());
+        $this->actingAs($user, 'web')->getJson(self::FEATURE)->assertOk();
+        $this->getJson('/api/v1/me/profile')
+            ->assertJsonPath('data.email', null)
+            ->assertJsonPath('meta.profile_complete', true);
+    }
+
     public function test_incomplete_user_gets_stable_json_error_on_required_features(): void
     {
         $user = User::factory()->create(['name' => ' ', 'email' => 'invalid-email']);

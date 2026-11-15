@@ -102,18 +102,22 @@ class OAuthController extends Controller
             $user = $socialAccount->user;
         } else {
             $email = $socialUser->getEmail();
+            $facebookWithoutEmail = $provider === 'facebook'
+                && ($email === null || (is_string($email) && trim($email) === ''));
 
-            if (
+            if ($facebookWithoutEmail) {
+                $email = null;
+            } elseif (
                 ! is_string($email) ||
                 Validator::make(
                     ['email' => $email],
                     ['email' => ['required', 'email:rfc', 'max:255']]
                 )->fails()
             ) {
-                return $this->fail('email_required');
+                return $this->fail($provider === 'facebook' ? 'invalid_email' : 'email_required');
+            } else {
+                $email = strtolower(trim($email));
             }
-
-            $email = strtolower(trim($email));
 
 
             if ($provider === 'google') {
@@ -125,19 +129,10 @@ class OAuthController extends Controller
                     return $this->fail('email_unverified');
                 }
             }
-
-
-            if ($provider === 'facebook') {
-                return $this->fail('email_verification_required');
-            }
-
-
-
-
             $name = trim((string) (
                 $socialUser->getName()
                 ?: $socialUser->getNickname()
-                ?: explode('@', $email)[0]
+                ?: ($email === null ? 'Facebook User' : explode('@', $email)[0])
             ));
 
             $name = mb_substr($name, 0, 255);
@@ -153,7 +148,9 @@ class OAuthController extends Controller
                     $email,
                     $name
                 ) {
-                    if (User::where('email', $email)->exists()) {
+                    // A NULL email is not an account identity. Only a supplied
+                    // provider email can conflict with a local account.
+                    if ($email !== null && User::where('email', $email)->exists()) {
                         return null;
                     }
 

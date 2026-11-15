@@ -7,7 +7,7 @@ function readProfile(body) {
   if (
     typeof profile !== 'object' || Array.isArray(profile) ||
     !Number.isInteger(profile.id) ||
-    typeof profile.name !== 'string' || typeof profile.email !== 'string' ||
+    typeof profile.name !== 'string' || (profile.email !== null && typeof profile.email !== 'string') ||
     (profile.bio != null && typeof profile.bio !== 'string') ||
     (profile.favorite_genres != null &&
       (!Array.isArray(profile.favorite_genres) ||

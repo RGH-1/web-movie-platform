@@ -26,7 +26,7 @@ completion messaging remain AB#36 and AB#37.
 Follow development-setup.md and auth-contract.md for database, session,
 CORS, and matching host configuration. Run migrations if needed, start
 Laravel from backend with php artisan serve, and start Vite from frontend
-with npm run dev. Use http://127.0.0.1:5173 consistently.
+with `npm run dev -- --host localhost`. Use http://localhost:5173 consistently.
 
 Build checks from frontend:
 

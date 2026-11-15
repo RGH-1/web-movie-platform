@@ -46,7 +46,7 @@ class OAuthCallbackTest extends TestCase
         return [
             'Google' => ['google'],
             'GitHub' => ['github'],
-            //'Facebook' => ['facebook'],
+            'Facebook' => ['facebook'],
         ];
     }
 
@@ -141,15 +141,15 @@ class OAuthCallbackTest extends TestCase
         ]);
     }
 
-    public function test_missing_provider_email_is_rejected(): void
+    public function test_missing_non_facebook_provider_email_is_rejected(): void
     {
-        Socialite::fake('facebook', SocialiteUser::fake([
-            'id' => 'facebook-789',
+        Socialite::fake('github', SocialiteUser::fake([
+            'id' => 'github-789',
             'name' => 'Alex',
             'email' => null,
         ]));
 
-        $this->get('/auth/facebook/callback')
+        $this->get('/auth/github/callback')
             ->assertRedirect(
                 'http://127.0.0.1:5173/login?oauth_error=email_required'
             );
@@ -309,23 +309,88 @@ class OAuthCallbackTest extends TestCase
     }
 
 
-    public function test_new_facebook_account_requires_email_verification(): void
+    public function test_new_facebook_account_with_email_is_created_and_authenticated(): void
     {
         Socialite::fake('facebook', SocialiteUser::fake([
             'id' => 'facebook-new-123',
             'name' => 'Alex Smith',
-            'email' => 'alex@example.com',
-            'verified' => true,
+            'email' => 'alex.facebook@example.com',
         ]));
 
         $this->get('/auth/facebook/callback')
-            ->assertRedirect(
-                'http://127.0.0.1:5173/login?oauth_error=email_verification_required'
-            );
+            ->assertRedirect('http://127.0.0.1:5173');
 
+        $user = User::where('email', 'alex.facebook@example.com')->firstOrFail();
+        $this->assertNull($user->password);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'facebook',
+            'provider_user_id' => 'facebook-new-123',
+            'provider_email' => 'alex.facebook@example.com',
+        ]);
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_new_facebook_account_without_email_is_created_and_authenticated(): void
+    {
+        Socialite::fake('facebook', SocialiteUser::fake([
+            'id' => 'facebook-no-email-123', 'name' => 'Alex Smith', 'email' => null,
+        ]));
+
+        $this->get('/auth/facebook/callback')->assertRedirect('http://127.0.0.1:5173');
+
+        $user = User::whereNull('email')->firstOrFail();
+        $this->assertNull($user->password);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'facebook',
+            'provider_user_id' => 'facebook-no-email-123',
+            'provider_email' => null,
+        ]);
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_malformed_facebook_email_is_rejected(): void
+    {
+        Socialite::fake('facebook', SocialiteUser::fake([
+            'id' => 'facebook-bad-email-123', 'name' => 'Alex', 'email' => 'not-an-email',
+        ]));
+
+        $this->get('/auth/facebook/callback')->assertRedirect(
+            'http://127.0.0.1:5173/login?oauth_error=invalid_email'
+        );
         $this->assertGuest('web');
-
         $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('social_accounts', 0);
+    }
+
+    public function test_multiple_facebook_ids_can_register_without_email(): void
+    {
+        foreach (['facebook-null-1', 'facebook-null-2'] as $id) {
+            Socialite::fake('facebook', SocialiteUser::fake([
+                'id' => $id, 'name' => 'Alex', 'email' => null,
+            ]));
+            $this->get('/auth/facebook/callback')->assertRedirect('http://127.0.0.1:5173');
+            Auth::guard('web')->logout();
+        }
+
+        $this->assertDatabaseCount('users', 2);
+        $this->assertDatabaseCount('social_accounts', 2);
+        $this->assertSame(2, User::whereNull('email')->count());
+    }
+
+    public function test_facebook_is_not_linked_to_an_existing_email_account(): void
+    {
+        User::factory()->create(['email' => 'alex@example.com']);
+        Socialite::fake('facebook', SocialiteUser::fake([
+            'id' => 'facebook-email-match-123', 'name' => 'Alex', 'email' => 'alex@example.com',
+        ]));
+
+        $this->get('/auth/facebook/callback')->assertRedirect(
+            'http://127.0.0.1:5173/login?oauth_error=account_exists'
+        );
+        $this->assertGuest('web');
+        $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('social_accounts', 0);
     }
 

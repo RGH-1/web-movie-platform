@@ -25,7 +25,7 @@ Google authentication supports:
 
 Authorized redirect URI:
 
-http://127.0.0.1:8000/auth/google/callback
+http://localhost:8000/auth/google/callback
 
 The registered URI must match the Laravel callback URL exactly.
 
@@ -35,9 +35,9 @@ Add the following variables to backend/.env:
 
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
-GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
-FRONTEND_URL=http://127.0.0.1:5173
+FRONTEND_URL=http://localhost:5173
 
 Never commit real OAuth credentials.
 
@@ -47,7 +47,7 @@ php artisan config:clear
 
 Start Laravel:
 
-php artisan serve --host=127.0.0.1 --port=8000
+php artisan serve --host=localhost --port=8000
 
 ## Authentication Flow
 
@@ -85,11 +85,11 @@ Successfully tested:
 
 Cancellation test URL:
 
-http://127.0.0.1:8000/auth/google/callback?error=access_denied
+http://localhost:8000/auth/google/callback?error=access_denied
 
 Expected redirect:
 
-http://127.0.0.1:5173/login?oauth_error=cancelled
+http://localhost:5173/login?oauth_error=cancelled
 
 This cancellation test exercises Laravel's callback handling, not Google's actual consent screen.
 

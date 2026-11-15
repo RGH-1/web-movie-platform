@@ -75,7 +75,7 @@ The migration status command should display the database migration status if the
 From the `backend` directory, run:
 
 ```bash
-php artisan serve
+php artisan serve --host=localhost --port=8000
 ```
 
 Laravel will display the local address where the application is running.
@@ -86,7 +86,7 @@ Open another terminal and navigate to the `frontend` directory:
 
 ```bash
 npm install
-npm run dev
+npm run dev -- --host localhost
 ```
 
 Vite will display the local address of the React application.
@@ -100,7 +100,7 @@ The React frontend uses Vite environment variables to configure the Laravel API 
 3. Add the following configuration:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
 4. Start the Laravel backend and React development server.
@@ -165,9 +165,9 @@ Run Laravel and Vite on the same hostname. For the default local ports, set
 these values in `backend/.env`:
 
 ```dotenv
-APP_URL=http://127.0.0.1:8000
-FRONTEND_URL=http://127.0.0.1:5173
-SANCTUM_STATEFUL_DOMAINS=127.0.0.1:5173
+APP_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
 SESSION_DOMAIN=null
 ```
 
@@ -179,7 +179,7 @@ Run `php artisan test --filter=LoginLogoutTest` from `backend` to verify the
 login and logout flow against the test database.
 
 For a manual check with an existing development user, keep the same cookie
-jar and send `Origin: http://127.0.0.1:5173` and `Accept: application/json`.
+jar and send `Origin: http://localhost:5173` and `Accept: application/json`.
 Request `GET /sanctum/csrf-cookie` and expect `204`. Send the URL-decoded
 `XSRF-TOKEN` cookie as `X-XSRF-TOKEN` on `POST /api/v1/auth/login`. Expect `200`
 with the user's ID, name, and email. Use the updated cookies and CSRF token
@@ -188,6 +188,12 @@ guest cookies and CSRF token and expect `401`.
 
 See the [authentication API contract](api/auth-contract.md) for request
 bodies and response examples.
+
+Use `localhost` consistently for the React app, Laravel app, API base URL,
+Sanctum origin, and OAuth redirect URIs. Do not mix `localhost` and
+`127.0.0.1` in a browser session: they are different cookie origins. The
+committed Sanctum example retains `127.0.0.1:5173` so existing loopback-based
+test and development clients remain supported.
 
 
 ## Important Notes

@@ -116,7 +116,7 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
 
         <div className="mb-3">
           <label htmlFor="profile-email" className="form-label">Email</label>
-          <input {...inputProps('email')} type="email" autoComplete="email" required />
+          <input {...inputProps('email')} type="email" autoComplete="email" placeholder="Not provided" />
           <FieldErrors field="email" errors={errors} />
         </div>
 

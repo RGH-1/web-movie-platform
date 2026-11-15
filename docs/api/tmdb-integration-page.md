@@ -14,7 +14,7 @@ Follow docs/development-setup.md, including Step 8 for TMDB credentials.
 
 Set the frontend API address in frontend/.env.local:
 
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_BASE_URL=http://localhost:8000/api
 
 Run php artisan serve from backend and npm run dev from frontend.
 Open the address printed by Vite.

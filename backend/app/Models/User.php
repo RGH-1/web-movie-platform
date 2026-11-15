@@ -44,12 +44,18 @@ class User extends Authenticatable
      */
     public function incompleteProfileFields(): array
     {
+        $emailRules = $this->email === null && $this->socialAccounts()
+            ->where('provider', 'facebook')
+            ->exists()
+            ? ['bail', 'nullable', 'string', 'max:255', 'email:rfc']
+            : ['bail', 'required', 'string', 'max:255', 'email:rfc'];
+
         $validator = Validator::make([
             'name' => is_string($this->name) ? trim($this->name) : $this->name,
             'email' => is_string($this->email) ? trim($this->email) : $this->email,
         ], [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['bail', 'required', 'string', 'max:255', 'email:rfc'],
+            'email' => $emailRules,
         ]);
 
         return array_keys($validator->errors()->toArray());
