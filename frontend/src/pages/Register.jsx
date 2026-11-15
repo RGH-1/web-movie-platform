@@ -1,7 +1,7 @@
-
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import SocialLoginButtons from "../components/SocialLoginButtons";
 
 // Check form values before sending them to Laravel.
 function validateForm(form) {
@@ -12,34 +12,35 @@ function validateForm(form) {
     const password = form.password;
 
     if (!name) {
-        errors.name = 'Name is required.';
+        errors.name = "Name is required.";
     } else if (name.length > 255) {
-        errors.name = 'Name cannot exceed 255 characters.';
+        errors.name = "Name cannot exceed 255 characters.";
     }
 
     if (!email) {
-        errors.email = 'Email is required.';
+        errors.email = "Email is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.email = 'Enter a valid email address.';
+        errors.email = "Enter a valid email address.";
     } else if (email.length > 255) {
-        errors.email = 'Email cannot exceed 255 characters.';
+        errors.email = "Email cannot exceed 255 characters.";
     }
 
     if (!password) {
-        errors.password = 'Password is required.';
+        errors.password = "Password is required.";
     } else if (Array.from(password).length < 12) {
-        errors.password = 'Password must contain at least 12 characters.';
+        errors.password = "Password must contain at least 12 characters.";
     } else if (
         new TextEncoder().encode(password).length > 72 ||
-        password.includes('\0')
+        password.includes("\0")
     ) {
-        errors.password = 'Password must be at most 72 bytes and contain no NUL characters.';
+        errors.password =
+            "Password must be at most 72 bytes and contain no NUL characters.";
     }
 
     if (!form.password_confirmation) {
-        errors.password_confirmation = 'Please confirm your password.';
+        errors.password_confirmation = "Please confirm your password.";
     } else if (form.password_confirmation !== password) {
-        errors.password_confirmation = 'Passwords do not match.';
+        errors.password_confirmation = "Passwords do not match.";
     }
 
     return errors;
@@ -49,14 +50,14 @@ function Register() {
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
     });
 
     const [errors, setErrors] = useState({});
-    const [generalError, setGeneralError] = useState('');
+    const [generalError, setGeneralError] = useState("");
     const [loading, setLoading] = useState(false);
     const { signUp } = useAuth();
 
@@ -73,7 +74,7 @@ function Register() {
             [name]: undefined,
         }));
 
-        setGeneralError('');
+        setGeneralError("");
     }
 
     async function handleSubmit(event) {
@@ -81,7 +82,7 @@ function Register() {
 
         if (loading) return;
 
-        setGeneralError('');
+        setGeneralError("");
 
         const validationErrors = validateForm(form);
         setErrors(validationErrors);
@@ -93,10 +94,9 @@ function Register() {
         setLoading(true);
 
         try {
-
             const user = await signUp(form);
 
-            navigate('/', {
+            navigate("/", {
                 replace: true,
                 state: {
                     registrationSuccess: `Welcome, ${user.name}! Your account has been created.`,
@@ -111,18 +111,22 @@ function Register() {
                 const formattedErrors = Object.fromEntries(
                     Object.entries(serverErrors).map(([field, messages]) => [
                         field,
-                        Array.isArray(messages) ? messages[0] : String(messages),
-                    ])
+                        Array.isArray(messages)
+                            ? messages[0]
+                            : String(messages),
+                    ]),
                 );
 
                 setErrors(formattedErrors);
-                setGeneralError('Please correct the highlighted fields.');
+                setGeneralError("Please correct the highlighted fields.");
             } else if (status === 409) {
-                setGeneralError('You are already signed in.');
+                setGeneralError("You are already signed in.");
             } else if (status === 419) {
-                setGeneralError('Your security session expired. Please try again.');
+                setGeneralError(
+                    "Your security session expired. Please try again.",
+                );
             } else {
-                setGeneralError('Registration failed. Please try again.');
+                setGeneralError("Registration failed. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -142,14 +146,20 @@ function Register() {
                             </p>
 
                             {generalError && (
-                                <div className="alert alert-danger" role="alert">
+                                <div
+                                    className="alert alert-danger"
+                                    role="alert"
+                                >
                                     {generalError}
                                 </div>
                             )}
 
                             <form onSubmit={handleSubmit} noValidate>
                                 <div className="mb-3 text-start">
-                                    <label htmlFor="name" className="form-label">
+                                    <label
+                                        htmlFor="name"
+                                        className="form-label"
+                                    >
                                         Full name
                                     </label>
                                     <input
@@ -157,18 +167,23 @@ function Register() {
                                         name="name"
                                         type="text"
                                         autoComplete="name"
-                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
                                         value={form.name}
                                         onChange={handleChange}
                                         disabled={loading}
                                     />
                                     {errors.name && (
-                                        <div className="invalid-feedback">{errors.name}</div>
+                                        <div className="invalid-feedback">
+                                            {errors.name}
+                                        </div>
                                     )}
                                 </div>
 
                                 <div className="mb-3 text-start">
-                                    <label htmlFor="email" className="form-label">
+                                    <label
+                                        htmlFor="email"
+                                        className="form-label"
+                                    >
                                         Email address
                                     </label>
                                     <input
@@ -176,18 +191,23 @@ function Register() {
                                         name="email"
                                         type="email"
                                         autoComplete="email"
-                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.email ? "is-invalid" : ""}`}
                                         value={form.email}
                                         onChange={handleChange}
                                         disabled={loading}
                                     />
                                     {errors.email && (
-                                        <div className="invalid-feedback">{errors.email}</div>
+                                        <div className="invalid-feedback">
+                                            {errors.email}
+                                        </div>
                                     )}
                                 </div>
 
                                 <div className="mb-3 text-start">
-                                    <label htmlFor="password" className="form-label">
+                                    <label
+                                        htmlFor="password"
+                                        className="form-label"
+                                    >
                                         Password
                                     </label>
                                     <input
@@ -195,13 +215,14 @@ function Register() {
                                         name="password"
                                         type="password"
                                         autoComplete="new-password"
-                                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.password ? "is-invalid" : ""}`}
                                         value={form.password}
                                         onChange={handleChange}
                                         disabled={loading}
                                     />
                                     <div className="form-text">
-                                        At least 12 characters, maximum 72 UTF-8 bytes.
+                                        At least 12 characters, maximum 72 UTF-8
+                                        bytes.
                                     </div>
                                     {errors.password && (
                                         <div className="invalid-feedback d-block">
@@ -211,7 +232,10 @@ function Register() {
                                 </div>
 
                                 <div className="mb-4 text-start">
-                                    <label htmlFor="password_confirmation" className="form-label">
+                                    <label
+                                        htmlFor="password_confirmation"
+                                        className="form-label"
+                                    >
                                         Confirm password
                                     </label>
                                     <input
@@ -219,7 +243,7 @@ function Register() {
                                         name="password_confirmation"
                                         type="password"
                                         autoComplete="new-password"
-                                        className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
+                                        className={`form-control ${errors.password_confirmation ? "is-invalid" : ""}`}
                                         value={form.password_confirmation}
                                         onChange={handleChange}
                                         disabled={loading}
@@ -245,13 +269,15 @@ function Register() {
                                             Creating account...
                                         </>
                                     ) : (
-                                        'Create account'
+                                        "Create account"
                                     )}
                                 </button>
                             </form>
 
+                            <SocialLoginButtons />
+
                             <p className="text-center mt-4 mb-0">
-                                Already have an account?{' '}
+                                Already have an account?{" "}
                                 <Link to="/login">Log in</Link>
                             </p>
                         </div>
