@@ -13,6 +13,7 @@ import MovieDiscovery from "./pages/MovieDiscovery";
 import MovieDetailNavigation from "./pages/MovieDetailNavigation";
 import MyMoviesPage from "./pages/MyMoviesPage";
 import MyListsPage from "./pages/MyListsPage";
+import PublicProfilePage from "./pages/PublicProfilePage";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -72,6 +73,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/users/:userId" element={<PublicProfilePage />} />
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />

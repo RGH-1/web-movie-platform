@@ -48,3 +48,29 @@ export async function resolveMovieForReview(tmdbId, signal) {
 
     return data.local_movie_id;
 }
+
+
+export async function getMovieReviews(movieId, page, { signal } = {}) {
+    const response = await api.get(
+        `/v1/catalog/movies/${encodeURIComponent(movieId)}/reviews`,
+        { params: { page }, signal },
+    );
+    const { data, meta } = response.data ?? {};
+
+    if (
+        !Array.isArray(data) ||
+        !Number.isInteger(meta?.current_page) ||
+        !Number.isInteger(meta.last_page) ||
+        !Number.isInteger(meta.rating_count) ||
+        (meta.rating_average !== null && !Number.isFinite(meta.rating_average))
+    ) {
+        throw new Error('Invalid movie reviews response.');
+    }
+
+    return { reviews: data, meta };
+}
+
+export async function deleteMovieReview(reviewId, { signal } = {}) {
+    await prepareReviewWrite(signal);
+    await api.delete(`/v1/reviews/${encodeURIComponent(reviewId)}`, { signal });
+}
