@@ -252,3 +252,5 @@ describe("movie details integration (AB#55)", () => {
         expect(requests).toEqual([]);
     });
 });
+
+vi.mock('../../src/components/AddToList', () => ({ default: () => null }));
