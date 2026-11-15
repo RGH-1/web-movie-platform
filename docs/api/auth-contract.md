@@ -139,8 +139,8 @@ Unauthenticated access to a protected route can return `{"message":"Unauthentica
 ## Implementation handoff
 
 - **Laravel:** Enable `$middleware->statefulApi()` in `backend/bootstrap/app.php`. Register the new routes in `backend/routes/api.php` under `Route::prefix('v1')`; Laravel supplies the `/api` prefix. Apply `auth:sanctum` to `/me` and logout. Use the `web` guard for credential checks and session login/logout. Explicitly return a JSON `409` for signed-in registration/login instead of using a redirecting guest flow. Rate limit the login route and keep auth responses JSON.
-- **Local configuration:** Use one hostname in both browser URLs, e.g. React at `http://127.0.0.1:5173` and Laravel at `http://127.0.0.1:8000`. Use `APP_URL=http://127.0.0.1:8000`, `SANCTUM_STATEFUL_DOMAINS=127.0.0.1:5173`, and a host-only session cookie (`SESSION_DOMAIN` unset or `null`). If Vite uses another port, update both the stateful origin list and CORS configuration. With the database session driver, run the existing migrations in your development database. Configure Laravel CORS for `api/*` and `sanctum/csrf-cookie`, allow the exact React origin, allow the JSON and XSRF request headers, and set `supports_credentials` to `true`.
-- **React:** Keep `VITE_API_BASE_URL=http://127.0.0.1:8000/api`. Add `withCredentials: true` and `withXSRFToken: true` to the shared Axios client in `frontend/src/services/api.js` when implementing auth. Call the CSRF route at the backend origin, then use `/v1/auth/...` and `/v1/me` relative to the existing client base. Read `response.data.data` for the user and clear it after successful logout. A successful logout has no JSON to parse.
+- **Local configuration:** Use `localhost` in both browser URLs: React at `http://localhost:5173` and Laravel at `http://localhost:8000`. Use `APP_URL=http://localhost:8000`, `SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173`, and a host-only session cookie (`SESSION_DOMAIN` unset or `null`). If Vite uses another port, update both the stateful origin list and CORS configuration. With the database session driver, run the existing migrations in your development database. Configure Laravel CORS for `api/*` and `sanctum/csrf-cookie`, allow the exact React origin, allow the JSON and XSRF request headers, and set `supports_credentials` to `true`.
+- **React:** Keep `VITE_API_BASE_URL=http://localhost:8000/api`. Add `withCredentials: true` and `withXSRFToken: true` to the shared Axios client in `frontend/src/services/api.js` when implementing auth. Call the CSRF route at the backend origin, then use `/v1/auth/...` and `/v1/me` relative to the existing client base. Read `response.data.data` for the user and clear it after successful logout. A successful logout has no JSON to parse.
 - **Deployment:** Keep the frontend and backend on the same site, such as a single HTTPS origin or HTTPS subdomains of the same parent domain. Revisit the CORS, stateful origin, and cookie settings for the actual deployment hosts.
 
 Example frontend call sequence for the future React implementation (after enabling both Axios options):
@@ -324,9 +324,10 @@ does not require an existing authenticated account.
 
 ### Local session configuration
 
-Use matching hostnames across the frontend URL, API base URL,
-credentialed CORS origin, and Sanctum's stateful domain list. The
-committed examples use `127.0.0.1`.
+Use `localhost` consistently across the frontend URL, API base URL,
+credentialed CORS origin, Sanctum's stateful domain list, and OAuth callback
+URLs. The committed Sanctum example also retains `127.0.0.1:5173` to support
+existing loopback-based tests and development clients.
 
 ### Verification
 

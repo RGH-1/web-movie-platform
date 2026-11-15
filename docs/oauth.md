@@ -8,7 +8,7 @@ The backend supports reusable OAuth authentication through Laravel Socialite.
 Supported providers:
 - Google
 - GitHub
-- Facebook (existing linked accounts only)
+- Facebook
 
 OAuth identities are connected to local application users through the `social_accounts` table.
 
@@ -51,13 +51,32 @@ FRONTEND_URL
 
 Local development callbacks:
 
-http://127.0.0.1:8000/auth/google/callback
-http://127.0.0.1:8000/auth/github/callback
-http://127.0.0.1:8000/auth/facebook/callback
+http://localhost:8000/auth/google/callback
+http://localhost:8000/auth/github/callback
+http://localhost:8000/auth/facebook/callback
 
 Register the exact callback URL with each OAuth provider.
 
 Never commit real OAuth credentials.
+
+## Local development
+
+Use one browser hostname throughout the local stack: React at
+`http://localhost:5173`, Laravel at `http://localhost:8000`, and the API at
+`http://localhost:8000/api`. Start the applications with:
+
+```bash
+# backend
+php artisan serve --host=localhost --port=8000
+
+# frontend
+npm run dev -- --host localhost
+```
+
+Configure the Google, GitHub, and Facebook provider consoles with the exact
+localhost callback URLs above. `localhost` and `127.0.0.1` are different
+browser origins, so do not mix them in an OAuth or Sanctum session. The
+example Sanctum list retains `127.0.0.1:5173` for compatible loopback clients.
 
 ## Database
 
@@ -100,9 +119,9 @@ OAuth access and refresh tokens are not persisted.
 - Existing local accounts are never automatically linked solely by matching email.
 - New Google registrations require a verified email.
 - GitHub registration relies on Socialite's verified primary-email retrieval behavior.
-- New Facebook registrations are currently blocked pending application-managed email confirmation.
-- Existing linked Facebook identities can authenticate.
-- Missing emails prevent new registrations.
+- Facebook registrations accept a missing email and store it as `NULL`; no placeholder email is generated.
+- Returning Facebook identities authenticate by their provider ID even when Facebook no longer returns an email.
+- Google and GitHub registrations still require email, and Google still requires a verified provider email.
 - Passwordless users can establish local passwords through the existing email password-reset flow.
 - Session identifiers are regenerated after successful authentication.
 
@@ -110,9 +129,9 @@ OAuth access and refresh tokens are not persisted.
 
 The frontend should navigate the browser to:
 
-http://127.0.0.1:8000/auth/google/redirect
-http://127.0.0.1:8000/auth/github/redirect
-http://127.0.0.1:8000/auth/facebook/redirect
+http://localhost:8000/auth/google/redirect
+http://localhost:8000/auth/github/redirect
+http://localhost:8000/auth/facebook/redirect
 
 After successful authentication, Laravel redirects to FRONTEND_URL.
 
@@ -129,13 +148,11 @@ The frontend should translate error codes into user-friendly messages.
 ## Known Limitations
 
 - OAuth credentials must be configured before real provider login can work.
-- New Facebook registration requires a separate email-confirmation implementation.
 - Explicit account linking and unlinking are not implemented.
 - OAuth login currently rejects users who are already authenticated.
-- Missing provider emails are rejected for new registrations.
+- Missing provider emails are rejected for new Google and GitHub registrations.
 - Real provider/browser end-to-end testing is still required.
 - Frontend social login buttons and OAuth error handling are separate integration work.
--Facebook provider integration is completed in AB#82 (N4). AB#79 provides the reusable authentication infrastructure, routes, provider configuration, and account mapping. First-time Facebook registration remains restricted until AB#82 implements its provider-specific requirements.
 
 ## Automated Tests
 

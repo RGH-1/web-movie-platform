@@ -44,6 +44,27 @@ class ProfileTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name', 'bio' => null]);
     }
 
+    public function test_facebook_user_without_email_can_update_unrelated_profile_fields(): void
+    {
+        $user = User::factory()->create(['email' => null, 'bio' => null]);
+        $user->socialAccounts()->create([
+            'provider' => 'facebook',
+            'provider_user_id' => 'facebook-profile-123',
+            'provider_email' => null,
+        ]);
+
+        $this->actingAs($user, 'web')->patchJson(self::URL, [
+            'name' => 'Updated Facebook User', 'bio' => 'Movie fan',
+        ])->assertOk()
+            ->assertJsonPath('data.email', null)
+            ->assertJsonPath('data.name', 'Updated Facebook User')
+            ->assertJsonPath('meta.profile_complete', true);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id, 'email' => null, 'bio' => 'Movie fan',
+        ]);
+    }
+
     public function test_genre_selection_is_saved_and_retrieved(): void
     {
         $user = User::factory()->create();

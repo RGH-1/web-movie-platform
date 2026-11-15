@@ -23,7 +23,7 @@ trailer behavior are provided by the merged implementation and AB#55.
 Start Laravel and Vite, sign in with a complete profile, then search for a
 movie and select View Details. A direct example is:
 
-    http://127.0.0.1:5173/movies/157336
+    http://localhost:5173/movies/157336
 
 The temporary sample-data HTML/React preview was removed in AB#55 after
 the live route became available. The route now uses Laravel responses;

@@ -23,7 +23,7 @@ test('normalizes editable fields and clears blank optional values', () => {
   };
   assert.deepEqual(validateProfileForm(form, profile), {});
   assert.deepEqual(buildProfileUpdate(form, profile), {
-    name: 'Sam Updated', email: 'sam@example.com', bio: null, favorite_genres: [],
+    name: 'Sam Updated', bio: null, favorite_genres: [],
   });
 });
 
@@ -74,4 +74,15 @@ test('reverting email omits a previously entered password', () => {
   form.email = ' SAM@EXAMPLE.COM ';
   assert.equal(emailIsChanging(form, profile), false);
   assert.equal(Object.hasOwn(buildProfileUpdate(form, profile), 'current_password'), false);
+});
+
+test('a missing email remains absent while unrelated Facebook profile fields are updated', () => {
+  const facebookProfile = { ...profile, email: null };
+  const form = { ...profileToForm(facebookProfile), name: ' Updated Sam ', bio: 'Movie fan' };
+
+  assert.equal(emailIsChanging(form, facebookProfile), false);
+  assert.deepEqual(validateProfileForm(form, facebookProfile), {});
+  assert.deepEqual(buildProfileUpdate(form, facebookProfile), {
+    name: 'Updated Sam', bio: 'Movie fan', favorite_genres: ['drama'],
+  });
 });

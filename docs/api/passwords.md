@@ -55,7 +55,7 @@ MAIL_PORT=1025
 MAIL_USERNAME=null
 MAIL_PASSWORD=null
 MAIL_FROM_ADDRESS=hello@example.com
-FRONTEND_RESET_PASSWORD_URL=http://127.0.0.1:5173/reset-password
+FRONTEND_RESET_PASSWORD_URL=http://localhost:5173/reset-password
 SESSION_DRIVER=database
 ```
 

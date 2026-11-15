@@ -3,7 +3,7 @@
 use App\Models\User;
 
 return [
-    'password_reset_url' => env('FRONTEND_RESET_PASSWORD_URL', 'http://127.0.0.1:5173/reset-password'),
+    'password_reset_url' => env('FRONTEND_RESET_PASSWORD_URL', 'http://localhost:5173/reset-password'),
 
     /*
     |--------------------------------------------------------------------------
