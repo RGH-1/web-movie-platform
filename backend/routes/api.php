@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\LocalMovieDetailsController;
 use App\Http\Controllers\MovieDetailsController;
+use App\Http\Controllers\MovieListController;
 use App\Http\Controllers\MovieFeedController;
 use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\PasswordController;
@@ -10,7 +11,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ResolveTmdbMovieController;
-
 
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
@@ -47,12 +47,22 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthSessionController::class, 'logout']);
         Route::post('/auth/change-password', [PasswordController::class, 'change'])->middleware('throttle:passwords');
 
+        Route::get('/me/lists', [MovieListController::class, 'index']);
+        Route::get('/lists/public', [MovieListController::class, 'publicIndex']);
+        Route::get('/lists/{listId}', [MovieListController::class, 'show']);
+
         Route::get('/me', [AuthSessionController::class, 'me']);
         Route::get('/me/profile', [ProfileController::class, 'show']);
         Route::patch('/me/profile', [ProfileController::class, 'update']);
 
         // Application features that also require a complete profile.
         Route::middleware('profile.complete')->group(function () {
+            Route::post('/lists', [MovieListController::class, 'store']);
+            Route::patch('/lists/{listId}', [MovieListController::class, 'update']);
+            Route::delete('/lists/{listId}', [MovieListController::class, 'destroy']);
+            Route::post('/lists/{listId}/movies', [MovieListController::class, 'addMovie']);
+            Route::delete('/lists/{listId}/movies/{movieId}', [MovieListController::class, 'removeMovie']);
+
             // AB#41 - Laravel movie search endpoint
             Route::get('/movies/search', [MovieSearchController::class, 'search']);
 

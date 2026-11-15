@@ -20,3 +20,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Movie discovery API](api/movie-discovery-contract.md)
 - [Custom movie lists schema (AB#90)](architecture/movie-lists-schema.md)
 
+
+- [Custom movie lists API (AB#91)](api/movie-lists-contract.md)

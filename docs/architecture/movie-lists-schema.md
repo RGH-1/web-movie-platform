@@ -28,6 +28,8 @@ A movie referenced by a list cannot be hard-deleted; catalog deactivation retain
 
 Private by default is a storage default, not access control. AB#91 implements ownership,
 visibility enforcement, input validation, and active-movie checks at the API boundary.
+See [the API contract](../api/movie-lists-contract.md). All list endpoints require login;
+public means shared with signed-in users. Writes also require a complete profile.
 AB#90 adds no routes or UI and does not change logout behavior.
 
 ## Automated verification
