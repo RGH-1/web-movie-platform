@@ -92,12 +92,27 @@ function changeText(value) {
 }
 
 it("uses the canonical ID from Movie Details and creates a rating without text", async () => {
-    respond = (config) =>
-        config.method === "get"
-            ? reply(config, 200, { data: movie })
-            : reply(config, 201, {
-                  data: { id: "17", rating: 4, review_text: null },
-              });
+    respond = (config) => {
+        if (config.method === "get" && config.url === REVIEW_URL) {
+            return reply(config, 200, {
+                data: [],
+                meta: {
+                    current_page: 1,
+                    last_page: 1,
+                    rating_count: 0,
+                    rating_average: null,
+                },
+            });
+        }
+
+        if (config.method === "get" && config.url === "/v1/movies/597") {
+            return reply(config, 200, { data: movie });
+        }
+
+        return reply(config, 201, {
+            data: { id: "17", rating: 4, review_text: null },
+        });
+    };
 
     render(
         <MemoryRouter initialEntries={["/movies/597"]}>
@@ -117,15 +132,24 @@ it("uses the canonical ID from Movie Details and creates a rating without text",
     fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
 
     expect(await screen.findByText("Review submitted.")).toBeInTheDocument();
-    expect(requests.map(({ method, url }) => [method, url])).toEqual([
+    const submissionRequests = requests.filter(
+        ({ method, url }) => !(method === "get" && url === REVIEW_URL),
+    );
+
+    expect(submissionRequests.map(({ method, url }) => [method, url])).toEqual([
         ["get", "/v1/movies/597"],
         ["get", "http://127.0.0.1:8000/sanctum/csrf-cookie"],
-        ["post", `/v1/catalog/movies/${MOVIE_ID}/reviews`],
+        ["post", REVIEW_URL],
     ]);
-    expect(JSON.parse(requests[2].data)).toEqual({
+    expect(JSON.parse(submissionRequests[2].data)).toEqual({
         rating: 4,
         review_text: null,
     });
+
+    const editButton = screen.getByRole("button", { name: "Edit review" });
+    expect(editButton).toBeEnabled();
+    fireEvent.click(editButton);
+    expect(screen.getByRole("radio", { name: "4 out of 5" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
 });
 
