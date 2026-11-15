@@ -65,3 +65,12 @@ export async function getMovieGenres() {
     const response = await api.get('/v1/movies/genres');
     return response.data.data;
 }
+
+export async function getLocalMovieDetails(id) {
+    const response = await api.get(`/v1/catalog/movies/${id}`);
+    const movie = response.data?.data;
+    if (movie?.local_movie_id !== id || typeof movie.title !== 'string' || !movie.title.trim()) {
+        throw new Error('Invalid catalog movie response.');
+    }
+    return { ...movie, genres: Array.isArray(movie.genres) ? movie.genres : [], cast: Array.isArray(movie.cast) ? movie.cast : [] };
+}
