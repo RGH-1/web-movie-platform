@@ -59,6 +59,18 @@ Replace the example values with your actual local configuration.
 
 Each developer should keep their own database credentials in their local `.env` file. Never commit that file.
 
+For social login, keep browser-facing URLs on the same hostname as the examples:
+`APP_URL=http://localhost:8000`, `FRONTEND_URL=http://localhost:5173`, and
+frontend `VITE_API_BASE_URL=http://localhost:8000/api`. Each provider callback is
+`http://localhost:8000/auth/{provider}/callback` and must also be registered in
+that provider's application settings. Do not mix `127.0.0.1` and `localhost`
+during an OAuth round trip, because the session cookie holds the OAuth state.
+Keep MySQL's `DB_HOST` independent of these browser URLs.
+
+If upgrading from the earlier GitHub-only implementation, run the pending
+migrations normally. The shared social-account migration adopts the existing
+provider IDs and preserves linked users; do not drop or truncate the table.
+
 ## 4. Verify the Database Connection
 
 From the `backend` directory, run:
