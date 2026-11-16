@@ -26,6 +26,7 @@ class PublicProfileTest extends TestCase
                     'statistics' => ['reviews_count' => 0, 'public_lists_count' => 0],
                     'followers_count' => 0,
                     'following_count' => 0,
+                    'is_following' => false,
                     'reviews' => [],
                     'public_lists' => [],
                 ],
@@ -131,7 +132,7 @@ class PublicProfileTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.followers_count', 1)
             ->assertJsonPath('data.following_count', 1);
-        $this->assertDatabaseMissing('user_follows', ['follower_id' => $follower->id]);
-        $this->assertDatabaseMissing('user_follows', ['followed_id' => $follower->id]);
+        $this->assertDatabaseMissing('follows', ['follower_id' => $follower->id]);
+        $this->assertDatabaseMissing('follows', ['followed_id' => $follower->id]);
     }
 }

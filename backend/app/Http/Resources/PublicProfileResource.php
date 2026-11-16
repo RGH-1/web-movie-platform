@@ -18,6 +18,7 @@ class PublicProfileResource extends JsonResource
             ],
             'followers_count' => (int) $this->followers_count,
             'following_count' => (int) $this->following_count,
+            'is_following' => (bool) $this->is_following,
             'reviews' => ReviewResource::collection($this->publicReviews),
             'public_lists' => PublicListSummaryResource::collection($this->publicLists),
         ];
