@@ -1,18 +1,18 @@
 <?php
 
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\FollowController;
 use App\Http\Controllers\LocalMovieDetailsController;
 use App\Http\Controllers\MovieDetailsController;
-use App\Http\Controllers\MovieListController;
 use App\Http\Controllers\MovieFeedController;
+use App\Http\Controllers\MovieListController;
 use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\ResolveTmdbMovieController;
 use App\Http\Controllers\PublicProfileController;
-
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ResolveTmdbMovieController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
@@ -44,8 +44,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/catalog/movies/{movieId}/reviews', [ReviewController::class, 'index']);
     Route::get('/users/{userId}/profile', PublicProfileController::class);
 
+    Route::get('/users/{userId}/followers', [FollowController::class, 'followers']);
+    Route::get('/users/{userId}/following', [FollowController::class, 'following']);
+
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/users/{userId}/follow', [FollowController::class, 'store']);
+        Route::delete('/users/{userId}/follow', [FollowController::class, 'destroy']);
+
         Route::post('/auth/logout', [AuthSessionController::class, 'logout']);
         Route::post('/auth/change-password', [PasswordController::class, 'change'])->middleware('throttle:passwords');
 

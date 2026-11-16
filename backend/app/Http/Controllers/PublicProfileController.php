@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\PublicProfileResource;
 use App\Models\Review;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class PublicProfileController extends Controller
 {
-    public function __invoke(string $userId): PublicProfileResource
+    public function __invoke(Request $request, string $userId): PublicProfileResource
     {
         $id = filter_var($userId, FILTER_VALIDATE_INT, [
             'options' => ['min_range' => 1],
@@ -21,6 +22,7 @@ class PublicProfileController extends Controller
         abort_if($user === null, 404, 'Profile not found.');
 
         $user->loadCount(['followers', 'following']);
+        $user->loadExists(['followers as is_following' => fn ($query) => $query->where('follows.follower_id', $request->user('sanctum')?->id ?? 0)]);
 
         $visibleReviews = $user->reviews()
             ->where('moderation_status', Review::STATUS_VISIBLE)
