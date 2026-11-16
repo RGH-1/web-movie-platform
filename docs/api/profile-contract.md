@@ -358,8 +358,8 @@ continued access to public health/diagnostic endpoints.
 ## Public author profile (AB#64)
 
 `GET /api/v1/users/{userId}/profile` is public and returns
-the contract documented in [Public profiles](public-profile-contract.md).
-The identifier remains a decimal string and `name` is the display name.
+`{"data":{"id":"8","name":"Review author"}}`. The identifier is a decimal
+string. The response contains only the account ID and display name.
 Invalid or missing IDs return `404`.
 
 Review author links open `/users/{userId}` in React. The authenticated
