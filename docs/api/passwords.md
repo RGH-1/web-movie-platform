@@ -94,3 +94,9 @@ It refuses to run outside the local environment or against a different SMTP host
 Local verification completed on 2026-11-14: migration applied, SMTP email
 received in Mailpit, configured frontend URL confirmed, reset succeeded, and
 token reuse returned 422.
+
+## Frontend integration (AB#77)
+
+The password UI is now implemented at `/account/password`, `/forgot-password`, and
+`/reset-password`. See [frontend behavior and manual checks](../frontend/password-management.md),
+including social-account setup and the existing no-email Facebook limitation.
