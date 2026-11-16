@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import MovieCard from './MovieCard';
+import MoviePagination from './MoviePagination';
 import { discoverMovies, getMovieGenres } from '../services/movies';
 
 const DEFAULT_FILTERS = { genre_id: '', year: '', min_rating: '', sort_by: 'popularity_desc' };
@@ -64,16 +65,29 @@ export default function MovieFilters() {
         setFilters(current => ({ ...current, [event.target.name]: event.target.value }));
     }
 
+    function submit(event) {
+        event.preventDefault();
+        const invalid = {};
+        if (event.currentTarget.elements.year.validity.badInput || (filters.year !== '' && (!/^\d{4}$/.test(filters.year) || Number(filters.year) < 1874 || Number(filters.year) > maximumYear))) {
+            invalid.year = [`Enter a four-digit year from 1874 to ${maximumYear}, or leave it blank.`];
+        }
+        if (event.currentTarget.elements.min_rating.validity.badInput || (filters.min_rating !== '' && (!Number.isFinite(Number(filters.min_rating)) || Number(filters.min_rating) < 0 || Number(filters.min_rating) > 10))) {
+            invalid.min_rating = ['Enter a TMDB rating from 0 to 10, or leave it blank.'];
+        }
+        if (Object.keys(invalid).length > 0) {
+            setErrors(invalid);
+            return;
+        }
+        applySelection({ filters: { ...filters }, page: 1 });
+    }
+
     function fieldError(name) {
         return errors[name] ? <div id={`${name}-error`} className="text-danger small" role="alert">{errors[name][0]}</div> : null;
     }
 
     return (
         <section aria-label="Browse movies by filters">
-            <form className="row g-3 mb-4" onSubmit={event => {
-                event.preventDefault();
-                applySelection({ filters: { ...filters }, page: 1 });
-            }}>
+            <form className="row g-3 mb-4" onSubmit={submit} noValidate>
                 <div className="col-12 col-md-3">
                     <label htmlFor="genre_id" className="form-label">Genre</label>
                     <select id="genre_id" name="genre_id" className="form-select" value={filters.genre_id} onChange={update} disabled={loading || genres.length === 0} aria-invalid={!!errors.genre_id} aria-describedby={errors.genre_id ? 'genre_id-error' : undefined}>
@@ -84,17 +98,21 @@ export default function MovieFilters() {
                 </div>
                 <div className="col-6 col-md-2">
                     <label htmlFor="year" className="form-label">Release year</label>
-                    <input id="year" name="year" className="form-control" type="number" min="1874" max={maximumYear} step="1" value={filters.year} onChange={update} disabled={loading} aria-invalid={!!errors.year} aria-describedby={errors.year ? 'year-error' : undefined} />
+                    <input id="year" name="year" className="form-control" type="number" min="1874" max={maximumYear} step="1" placeholder="Any year" value={filters.year} onChange={update} disabled={loading} aria-invalid={!!errors.year} aria-describedby={errors.year ? 'year-error' : undefined} />
                     {fieldError('year')}
                 </div>
                 <div className="col-6 col-md-2">
                     <label htmlFor="min_rating" className="form-label">Minimum rating</label>
-                    <input id="min_rating" name="min_rating" className="form-control" type="number" min="0" max="10" step="any" value={filters.min_rating} onChange={update} disabled={loading} aria-invalid={!!errors.min_rating} aria-describedby={errors.min_rating ? 'min_rating-error' : undefined} />
+                    <input id="min_rating" name="min_rating" className="form-control" type="number" min="0" max="10" step="any" list="tmdb-rating-options" placeholder="Any rating" value={filters.min_rating} onChange={update} disabled={loading} aria-invalid={!!errors.min_rating} aria-describedby={`tmdb-rating-help${errors.min_rating ? ' min_rating-error' : ''}`} />
+                    <datalist id="tmdb-rating-options">
+                        {[5, 6, 7, 8, 9].map((rating) => <option key={rating} value={rating}>{rating}+</option>)}
+                    </datalist>
+                    <p id="tmdb-rating-help" className="form-text">TMDB rating out of 10. Platform user ratings use 1–5.</p>
                     {fieldError('min_rating')}
                 </div>
                 <div className="col-12 col-md-3">
                     <label htmlFor="sort_by" className="form-label">Sort by</label>
-                    <select id="sort_by" name="sort_by" className="form-select" value={filters.sort_by} onChange={update} disabled={loading} aria-invalid={!!errors.sort_by}>
+                    <select id="sort_by" name="sort_by" className="form-select" value={filters.sort_by} onChange={update} disabled={loading} aria-invalid={!!errors.sort_by} aria-describedby={errors.sort_by ? 'sort_by-error' : undefined}>
                         {SORTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                     {fieldError('sort_by')}
@@ -104,10 +122,21 @@ export default function MovieFilters() {
                     <button type="button" className="btn btn-outline-secondary" disabled={loading} onClick={() => {
                         setFilters(DEFAULT_FILTERS);
                         applySelection({ filters: DEFAULT_FILTERS, page: 1 });
-                    }}>Reset</button>
+                    }}>Clear filters</button>
                 </div>
             </form>
             {genreError && <div className="alert alert-warning" role="alert">{genreError} <button className="btn btn-link" onClick={() => { setGenreError(''); setGenreAttempt(value => value + 1); }}>Retry genres</button></div>}
+            <div className="mb-3" aria-label="Applied filters">
+                <h2 className="h6">Applied filters</h2>
+                <ul className="list-unstyled d-flex flex-wrap gap-2 mb-0">
+                    <li className="badge text-bg-secondary">Genre: {selection.filters.genre_id
+                        ? genres.find((genre) => String(genre.id) === selection.filters.genre_id)?.name ?? 'Selected genre'
+                        : 'All genres'}</li>
+                    <li className="badge text-bg-secondary">Year: {selection.filters.year || 'Any year'}</li>
+                    <li className="badge text-bg-secondary">TMDB rating: {selection.filters.min_rating === '' ? 'Any rating' : `${selection.filters.min_rating}+ / 10`}</li>
+                    <li className="badge text-bg-secondary">Sort: {SORTS.find(([value]) => value === selection.filters.sort_by)?.[1]}</li>
+                </ul>
+            </div>
             {loading && <p role="status">Loading movies...</p>}
             {error && <div className="alert alert-danger" role="alert">{error} <button className="btn btn-link" onClick={() => applySelection(current => ({ ...current }))}>Retry discovery</button></div>}
             {!loading && !error && result && <>
@@ -115,11 +144,10 @@ export default function MovieFilters() {
                 {result.data.length === 0
                     ? <div className="alert alert-info" role="status">No movies found on this page. Try other filters or a previous page.</div>
                     : <div className="row g-4">{result.data.map(movie => <div key={movie.tmdb_id} className="col-12 col-sm-6 col-md-4 col-lg-3"><MovieCard movie={movie} /></div>)}</div>}
-                {result.meta.total_pages > 1 && <nav className="d-flex justify-content-center align-items-center gap-3 mt-4" aria-label="Filtered movie results pagination">
-                    <button className="btn btn-outline-primary" disabled={result.meta.page <= 1} onClick={() => applySelection(current => ({ ...current, page: result.meta.page - 1 }))}>Previous</button>
-                    <span aria-live="polite">Page {result.meta.page} of {result.meta.total_pages}</span>
-                    <button className="btn btn-outline-primary" disabled={result.meta.page >= result.meta.total_pages} onClick={() => applySelection(current => ({ ...current, page: result.meta.page + 1 }))}>Next</button>
-                </nav>}
+                {result.meta.total_pages > 1 && <MoviePagination
+                    page={result.meta.page} totalPages={result.meta.total_pages}
+                    onPageChange={(page) => applySelection(current => ({ ...current, page }))}
+                    label="Filtered movie results pagination" />}
             </>}
         </section>
     );

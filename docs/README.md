@@ -25,3 +25,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [List details and Add to List (AB#93)](frontend/list-details.md)
 
 - [List management and visibility verification (AB#94)](frontend/list-management-testing.md)
+
+- [Movie filtering and sorting interface (AB#101)](frontend/movie-filtering.md)
