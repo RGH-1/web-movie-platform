@@ -203,6 +203,9 @@ function Login() {
                                 Log in to your movie discovery account.
                             </p>
 
+                            {location.state?.passwordSuccess && <p className="alert alert-success" role="status">{location.state.passwordSuccess}</p>}
+                            <p><Link to="/forgot-password">Forgot password?</Link></p>
+
                             {displayedError && (
                                 <div
                                     className="alert alert-danger"

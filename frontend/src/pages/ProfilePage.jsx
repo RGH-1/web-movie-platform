@@ -109,6 +109,8 @@ export default function ProfilePage() {
             />
           )}
 
+          <p><Link to="/account/password">Password settings</Link></p>
+
           {success && <p className="alert alert-success" role="status">{success}</p>}
 
           {state.status === 'ready' && editing && (
