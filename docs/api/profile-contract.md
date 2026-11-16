@@ -364,3 +364,9 @@ Invalid or missing IDs return `404`.
 
 Review author links open `/users/{userId}` in React. The authenticated
 profile editor continues to use `/profile` and `/api/v1/me/profile`.
+## Password capability (AB#77)
+
+Authenticated profile GET/PATCH responses additionally include `data.has_local_password`,
+a read-only boolean indicating whether this account has a local app password. No hash
+or provider credentials are returned. Clients cannot update this field through profile
+PATCH. Password settings use it to choose change-password versus email setup guidance.

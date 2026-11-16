@@ -58,6 +58,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'bio' => $user->bio,
                 'favorite_genres' => $user->favorite_genres ?? [],
+                'has_local_password' => filled($user->password),
             ],
             'meta' => [
                 'profile_complete' => $incompleteFields === [],

@@ -27,7 +27,7 @@ class ProfileTest extends TestCase
             ->getJson(self::URL.'?id='.$other->id)
             ->assertOk()->assertExactJson(['data' => [
                 'id' => $user->id, 'name' => $user->name,
-                'email' => $user->email, 'bio' => null, 'favorite_genres' => [],
+                'email' => $user->email, 'bio' => null, 'favorite_genres' => [], 'has_local_password' => true,
             ], 'meta' => ['profile_complete' => true, 'incomplete_fields' => []]]);
     }
 
@@ -137,5 +137,16 @@ class ProfileTest extends TestCase
         $this->actingAs($user, 'web')->withHeader('Origin', 'http://127.0.0.1:5173')
             ->patchJson(self::URL, ['name' => 'Changed'])->assertStatus(419);
         $this->assertNotSame('Changed', $user->fresh()->name);
+    }
+
+    public function test_password_capability_is_read_only_and_never_exposes_hashes(): void
+    {
+        $user = User::factory()->create(['password' => null]);
+        $this->actingAs($user)->getJson(self::URL)->assertOk()
+            ->assertJsonPath('data.has_local_password', false)->assertJsonMissingPath('data.password');
+        $this->patchJson(self::URL, ['has_local_password' => true])->assertUnprocessable();
+        $user->forceFill(['password' => Hash::make('ExampleSecure!123')])->save();
+        $this->getJson(self::URL)->assertOk()->assertJsonPath('data.has_local_password', true)
+            ->assertJsonMissingPath('data.password');
     }
 }

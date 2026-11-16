@@ -8,6 +8,7 @@ import ProfileCompletionNotice from "./components/ProfileCompletionNotice";
 
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import PasswordPage from "./pages/PasswordPage";
 import ProfilePage from "./pages/ProfilePage";
 import MovieDiscovery from "./pages/MovieDiscovery";
 import MovieDetailNavigation from "./pages/MovieDetailNavigation";
@@ -74,10 +75,13 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<PasswordPage mode="forgot" />} />
+            <Route path="/reset-password" element={<PasswordPage mode="reset" />} />
             <Route path="/users/:userId" element={<PublicProfilePage />} />
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/account/password" element={<PasswordPage mode="change" />} />
                 <Route path="/movies" element={<MovieDiscovery />} />
                 <Route
                     path="/movies/:tmdbId"
