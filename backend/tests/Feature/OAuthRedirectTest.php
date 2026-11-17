@@ -7,10 +7,10 @@ use Tests\TestCase;
 
 class OAuthRedirectTest extends TestCase
 {
-    public function test_unsupported_provider_is_rejected(): void
+    public function test_unsupported_provider_is_rejected_on_both_routes(): void
     {
-        $this->get('/auth/unknown/redirect')
-            ->assertNotFound();
+        $this->get('/auth/unknown/redirect')->assertNotFound();
+        $this->get('/auth/unknown/callback')->assertNotFound();
     }
 
     public function test_unconfigured_provider_is_rejected(): void
