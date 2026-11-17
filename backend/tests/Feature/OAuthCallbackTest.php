@@ -50,6 +50,14 @@ class OAuthCallbackTest extends TestCase
         ];
     }
 
+    public static function emailRequiredProviders(): array
+    {
+        return [
+            'Google' => ['google'],
+            'GitHub' => ['github'],
+        ];
+    }
+
     #[DataProvider('providers')]
     public function test_new_social_user_is_created_and_authenticated(
         string $provider
@@ -83,79 +91,78 @@ class OAuthCallbackTest extends TestCase
         $this->assertAuthenticatedAs($user, 'web');
     }
 
-    public function test_existing_social_account_logs_into_same_user(): void
-    {
+    #[DataProvider('emailRequiredProviders')]
+    public function test_existing_social_account_logs_into_same_user(
+        string $provider,
+    ): void {
         $user = User::factory()->create();
-
         $user->socialAccounts()->create([
-            'provider' => 'google',
-            'provider_user_id' => 'google-999',
+            'provider' => $provider,
+            'provider_user_id' => 'returning-identity',
             'provider_email' => $user->email,
         ]);
 
-        Socialite::fake('google', SocialiteUser::fake([
-            'id' => 'google-999',
+        Socialite::fake($provider, SocialiteUser::fake([
+            'id' => 'returning-identity',
             'name' => 'Updated Provider Name',
             'email' => 'changed@example.com',
+            'email_verified' => true,
         ]));
 
-        $this->get('/auth/google/callback')
+        $this->get("/auth/{$provider}/callback")
             ->assertRedirect('http://127.0.0.1:5173');
 
         $this->assertAuthenticatedAs($user, 'web');
-
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('social_accounts', 1);
-
-        $this->assertEquals(
-            $user->email,
-            $user->fresh()->email
-        );
+        $this->assertSame($user->email, $user->fresh()->email);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => $provider,
+            'provider_user_id' => 'returning-identity',
+        ]);
     }
 
-    public function test_existing_email_cannot_be_linked_automatically(): void
-    {
-        $existingUser = User::factory()->create([
-            'email' => 'alex@example.com',
-        ]);
+    #[DataProvider('emailRequiredProviders')]
+    public function test_existing_email_cannot_be_linked_automatically(
+        string $provider,
+    ): void {
+        $existingUser = User::factory()->create(['email' => 'alex@example.com']);
 
-        Socialite::fake('github', SocialiteUser::fake([
-            'id' => 'github-456',
+        Socialite::fake($provider, SocialiteUser::fake([
+            'id' => 'new-provider-identity',
             'name' => 'Alex',
-            'email' => 'alex@example.com',
+            'email' => 'ALEX@example.com',
+            'email_verified' => true,
         ]));
 
-        $this->get('/auth/github/callback')
-            ->assertRedirect(
-                'http://127.0.0.1:5173/login?oauth_error=account_exists'
-            );
+        $this->get("/auth/{$provider}/callback")
+            ->assertRedirect('http://127.0.0.1:5173/login?oauth_error=account_exists');
 
         $this->assertGuest('web');
-
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('social_accounts', 0);
-
         $this->assertDatabaseHas('users', [
             'id' => $existingUser->id,
             'email' => 'alex@example.com',
         ]);
     }
 
-    public function test_missing_non_facebook_provider_email_is_rejected(): void
-    {
-        Socialite::fake('github', SocialiteUser::fake([
-            'id' => 'github-789',
+    #[DataProvider('emailRequiredProviders')]
+    public function test_missing_non_facebook_provider_email_is_rejected(
+        string $provider,
+    ): void {
+        Socialite::fake($provider, SocialiteUser::fake([
+            'id' => 'missing-email-identity',
             'name' => 'Alex',
             'email' => null,
+            'email_verified' => true,
         ]));
 
-        $this->get('/auth/github/callback')
-            ->assertRedirect(
-                'http://127.0.0.1:5173/login?oauth_error=email_required'
-            );
+        $this->get("/auth/{$provider}/callback")
+            ->assertRedirect('http://127.0.0.1:5173/login?oauth_error=email_required');
 
         $this->assertGuest('web');
-
         $this->assertDatabaseCount('users', 0);
         $this->assertDatabaseCount('social_accounts', 0);
     }
@@ -219,40 +226,55 @@ class OAuthCallbackTest extends TestCase
 
 
 
-    public function test_social_login_works_with_sanctum_and_logout(): void
-    {
-        Socialite::fake('google', SocialiteUser::fake([
-            'id' => 'google-123',
+    #[DataProvider('providers')]
+    public function test_social_login_works_with_sanctum_and_logout(
+        string $provider,
+    ): void {
+        config(['app.key' => 'base64:' . base64_encode(random_bytes(32))]);
+
+        $email = "{$provider}@example.com";
+
+        Socialite::fake($provider, SocialiteUser::fake([
+            'id' => 'test-identity',
             'name' => 'Alex Smith',
-            'email' => 'alex@example.com',
+            'email' => $email,
             'email_verified' => true,
         ]));
 
-        $this->get('/auth/google/callback')
+        $callback = $this->get("/auth/{$provider}/callback")
             ->assertRedirect('http://127.0.0.1:5173');
 
-        $user = User::where('email', 'alex@example.com')
-            ->firstOrFail();
-
-        $this->withHeader('Origin', 'http://127.0.0.1:5173');
-
-        $this->getJson('/api/v1/me')
-            ->assertOk()
-            ->assertJsonPath('data.id', $user->id)
-            ->assertJsonPath('data.email', 'alex@example.com');
-
-
-        $this->postJson('/api/v1/auth/logout')
-            ->assertNoContent();
-
-        $this->assertGuest('web');
+        $user = User::where('email', $email)->firstOrFail();
+        $cookieName = config('session.cookie');
 
         Auth::forgetGuards();
+        Auth::shouldUse('web');
 
-        $this->getJson('/api/v1/me')
-            ->assertUnauthorized();
+        $this->withHeader('Origin', 'http://127.0.0.1:5173')
+            ->withCredentials()
+            ->withUnencryptedCookie(
+                $cookieName,
+                $callback->getCookie($cookieName, false)->getValue(),
+            );
+
+        $this->getJson('/api/v1/me')->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', $email);
+
+        $this->getJson('/api/v1/me/profile')->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('meta.profile_complete', true);
+
+        $logout = $this->postJson('/api/v1/auth/logout')->assertNoContent();
+
+        Auth::forgetGuards();
+        Auth::shouldUse('web');
+
+        $this->withUnencryptedCookie(
+            $cookieName,
+            $logout->getCookie($cookieName, false)->getValue(),
+        )->getJson('/api/v1/me')->assertUnauthorized();
     }
-
 
     public function test_authenticated_user_cannot_start_another_oauth_login(): void
     {
@@ -417,5 +439,25 @@ class OAuthCallbackTest extends TestCase
 
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('social_accounts', 1);
+    }
+
+    public function test_provider_failure_leaves_the_viewer_signed_out(): void
+    {
+        $driver = \Mockery::mock();
+        $driver->shouldReceive('user')
+            ->once()
+            ->andThrow(new \RuntimeException('Provider unavailable.'));
+
+        Socialite::shouldReceive('driver')
+            ->once()
+            ->with('github')
+            ->andReturn($driver);
+
+        $this->get('/auth/github/callback')
+            ->assertRedirect('http://127.0.0.1:5173/login?oauth_error=provider_failed');
+
+        $this->assertGuest('web');
+        $this->assertDatabaseCount('users', 0);
+        $this->assertDatabaseCount('social_accounts', 0);
     }
 }
