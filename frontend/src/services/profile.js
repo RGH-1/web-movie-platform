@@ -55,5 +55,32 @@ export async function getPublicProfile(userId, { signal } = {}) {
     throw new Error('Invalid public profile response.');
   }
 
-  return { id: profile.id, name: profile.name };
+  return {
+    id: profile.id, name: profile.name,
+    followers_count: profile.followers_count ?? 0,
+    following_count: profile.following_count ?? 0,
+    is_following: profile.is_following === true,
+    statistics: profile.statistics,
+    reviews: profile.reviews ?? [],
+    public_lists: profile.public_lists ?? [],
+  };
+}
+
+export async function setUserFollow(userId, following, { signal } = {}) {
+  const csrfUrl = new URL('/sanctum/csrf-cookie', api.defaults.baseURL).href;
+  await api.get(csrfUrl, { signal });
+  const path = `/v1/users/${encodeURIComponent(userId)}/follow`;
+  const response = following
+    ? await api.post(path, null, { signal })
+    : await api.delete(path, { signal });
+  const data = response.data?.data;
+  if (data?.id !== userId || typeof data.is_following !== 'boolean' ||
+      !Number.isInteger(data.followers_count) || !Number.isInteger(data.following_count)) {
+    throw new Error('Invalid follow response.');
+  }
+  return {
+    is_following: data.is_following,
+    followers_count: data.followers_count,
+    following_count: data.following_count,
+  };
 }
