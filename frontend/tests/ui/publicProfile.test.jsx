@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuthContext } from '../../src/context/AuthContext.jsx';
 import PublicProfilePage from '../../src/pages/PublicProfilePage.jsx';
@@ -69,4 +69,35 @@ it('retries a failed profile request', async () => {
   respond();
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByRole('heading', { name: 'Public author' })).toBeInTheDocument();
+});
+
+it('prevents duplicate requests while a follow change is pending', async () => {
+  respond(); open({ id: 7 });
+  await screen.findByRole('button', { name: 'Follow' });
+  let finish;
+  const adapter = vi.fn((config) => config.url.endsWith('/follow') ? new Promise((resolve) => {
+    finish = () => resolve({ config, data: { data: { ...profile, is_following: true, followers_count: 3 } }, status: 200, headers: {} });
+  }) : Promise.resolve({ config, data: {}, status: 204, headers: {} }));
+  api.defaults.adapter = adapter;
+  fireEvent.click(screen.getByRole('button', { name: 'Follow' }));
+  const pending = await screen.findByRole('button', { name: /Updating/ });
+  expect(pending).toBeDisabled();
+  fireEvent.click(pending);
+  await waitFor(() => expect(adapter.mock.calls.filter(([config]) => config.url.endsWith('/follow'))).toHaveLength(1));
+  finish();
+  expect(await screen.findByRole('button', { name: 'Unfollow' })).toBeEnabled();
+});
+
+it('uses the current viewer state when navigating to another profile', async () => {
+  api.defaults.adapter = vi.fn(async (config) => ({ config, status: 200, headers: {}, data: { data:
+    config.url.includes('/9/') ? { ...profile, id: '9', name: 'Second author', is_following: true } : profile,
+  } }));
+  render(<MemoryRouter initialEntries={['/users/8']}><AuthContext.Provider value={{ user: { id: 7 }, isAuthenticated: true, loading: false }}>
+    <Routes><Route path="/users/:userId" element={<><PublicProfilePage /><Link to="/users/9">Next profile</Link></>} /></Routes>
+  </AuthContext.Provider></MemoryRouter>);
+  await screen.findByRole('button', { name: 'Follow' });
+  fireEvent.click(screen.getByRole('link', { name: 'Next profile' }));
+  expect(await screen.findByRole('heading', { name: 'Second author' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Unfollow' })).toBeEnabled();
+  expect(screen.queryByRole('heading', { name: 'Public author' })).not.toBeInTheDocument();
 });
