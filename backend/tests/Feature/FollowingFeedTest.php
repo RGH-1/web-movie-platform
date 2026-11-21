@@ -84,6 +84,40 @@ class FollowingFeedTest extends TestCase
             ->assertJsonPath('data.0.type', 'rating');
     }
 
+    public function test_author_activity_preference_applies_before_pagination(): void
+    {
+        $viewer = User::factory()->create();
+        $author = User::factory()->create();
+        $other = User::factory()->create();
+        $viewer->following()->attach([$author->id, $other->id]);
+
+        $remaining = $this->reviewFor($other);
+        $this->travel(1)->minutes();
+        $this->reviewFor($author);
+        $this->reviewFor($author, ['review_text' => 'Review']);
+        $author->movieLists()->create(['name' => 'Public', 'is_public' => true]);
+
+        $this->actingAs($viewer)->getJson('/api/v1/feed?per_page=1')
+            ->assertOk()->assertJsonPath('meta.total', 4)
+            ->assertJsonPath('data.0.author.id', (string) $author->id);
+
+        $this->actingAs($author)->patchJson('/api/v1/me/profile', ['share_activity' => false])
+            ->assertOk()->assertJsonPath('data.share_activity', false);
+
+        $this->actingAs($viewer)->getJson('/api/v1/feed?per_page=1')
+            ->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.target_id', (string) $remaining->id)
+            ->assertJsonPath('meta', ['current_page' => 1, 'last_page' => 1, 'per_page' => 1, 'total' => 1]);
+        $this->getJson('/api/v1/feed?per_page=1&page=2')
+            ->assertOk()->assertJsonPath('data', [])->assertJsonPath('meta.total', 1);
+
+        $this->actingAs($author)->patchJson('/api/v1/me/profile', ['share_activity' => true])
+            ->assertOk()->assertJsonPath('data.share_activity', true);
+        $this->actingAs($viewer)->getJson('/api/v1/feed?per_page=1&page=4')
+            ->assertOk()->assertJsonPath('meta.total', 4)
+            ->assertJsonPath('data.0.target_id', (string) $remaining->id);
+    }
+
     public function test_feed_returns_json_authentication_and_validation_errors(): void
     {
         $this->get('/api/v1/feed')->assertUnauthorized()->assertJsonStructure(['message']);

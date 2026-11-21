@@ -29,6 +29,7 @@ class User extends Authenticatable
 
     protected $attributes = [
         'is_admin' => false,
+        'share_activity' => true,
     ];
 
     /**
@@ -74,6 +75,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'favorite_genres' => 'array',
+            'share_activity' => 'boolean',
             'is_admin' => 'boolean',
         ];
     }

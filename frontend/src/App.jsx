@@ -16,6 +16,7 @@ import MyMoviesPage from "./pages/MyMoviesPage";
 import MyListsPage from "./pages/MyListsPage";
 import ListDetailsPage from "./pages/ListDetailsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
+import FollowingFeedPage from "./pages/FollowingFeedPage";
 import UserRelationshipListPage from "./pages/UserRelationshipListPage";
 
 import { useAuth } from "./hooks/useAuth";
@@ -52,6 +53,9 @@ function Home() {
 
                 {isAuthenticated && (
                     <>
+                        <Link to="/feed" className="btn btn-outline-primary">
+                            Following feed
+                        </Link>
                         <Link to="/my-lists" className="btn btn-outline-primary">
                             My Lists
                         </Link>
@@ -83,6 +87,7 @@ function App() {
             <Route path="/users/:userId/following" element={<UserRelationshipListPage relationship="following" />} />
 
             <Route element={<ProtectedRoute />}>
+                <Route path="/feed" element={<FollowingFeedPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/account/password" element={<PasswordPage mode="change" />} />
                 <Route path="/movies" element={<MovieDiscovery />} />

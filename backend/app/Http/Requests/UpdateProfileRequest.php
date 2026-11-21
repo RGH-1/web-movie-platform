@@ -8,7 +8,7 @@ use Illuminate\Validation\Validator;
 
 class UpdateProfileRequest extends FormRequest
 {
-    public const EDITABLE_FIELDS = ['name', 'email', 'bio', 'favorite_genres'];
+    public const EDITABLE_FIELDS = ['name', 'email', 'bio', 'favorite_genres', 'share_activity'];
 
     public function authorize(): bool
     {
@@ -38,6 +38,7 @@ class UpdateProfileRequest extends FormRequest
                 'email:rfc', Rule::unique('users', 'email')->ignore($this->user()),
             ],
             'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'share_activity' => ['sometimes', 'boolean'],
             'favorite_genres' => ['sometimes', 'array', 'list', 'max:5'],
             'favorite_genres.*' => [
                 'bail', 'required', 'string', 'distinct:strict',

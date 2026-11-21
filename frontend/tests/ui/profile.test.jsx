@@ -107,6 +107,22 @@ afterEach(() => {
   api.defaults.adapter = originalAdapter;
 });
 
+it('saves changes to the following-feed sharing preference', async () => {
+  const user = userEvent.setup();
+  openProfile();
+  await openEditor(user);
+
+  const sharing = screen.getByRole('checkbox', { name: /share my reviews/i });
+  expect(sharing).toBeChecked();
+  await user.click(sharing);
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await screen.findByText('Your profile was saved.');
+  expect(patches).toEqual([expect.objectContaining({ share_activity: false })]);
+
+  await openEditor(user);
+  expect(screen.getByRole('checkbox', { name: /share my reviews/i })).not.toBeChecked();
+});
+
 describe('profile viewing and authentication', () => {
   it('loads only the signed-in profile and safely displays optional/plain-text fields', async () => {
     savedProfile.bio = '<script>not executable</script>';

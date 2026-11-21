@@ -34,7 +34,7 @@ export async function updateProfile(fields, { signal } = {}) {
 
   // Explicit allowlist: never send an entire user model back to Laravel.
   const payload = Object.fromEntries(
-    ['name', 'email', 'bio', 'favorite_genres', 'current_password']
+    ['name', 'email', 'bio', 'favorite_genres', 'share_activity', 'current_password']
       .filter((field) => Object.hasOwn(fields, field))
       .map((field) => [field, fields[field]]),
   );
