@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use App\Models\User;
+use App\Policies\ReviewPolicy;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define(
+            'access-admin',
+            static fn (User $user): bool => $user->is_admin === true,
+        );
+
+        Gate::policy(Review::class, ReviewPolicy::class);
+        
         ResetPassword::createUrlUsing(
             fn ($user, string $token) => config('auth.password_reset_url').'?'.http_build_query([
                 'token' => $token, 'email' => $user->getEmailForPasswordReset(),
