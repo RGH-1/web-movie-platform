@@ -64,7 +64,13 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                         <div>
                             <h1 className="h2 text-break">{profile.name}</h1>
                             <p className="mb-0" aria-live="polite">
-                                {profile.followers_count} followers · {profile.following_count} following
+                                <Link to={`/users/${encodeURIComponent(userId)}/followers`}>
+                                    {profile.followers_count} followers
+                                </Link>
+                                {' · '}
+                                <Link to={`/users/${encodeURIComponent(userId)}/following`}>
+                                    {profile.following_count} following
+                                </Link>
                             </p>
                         </div>
                         {!ownProfile && !authLoading && (authenticated ? (

@@ -27,3 +27,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Movie filtering and sorting interface (AB#101)](frontend/movie-filtering.md)
 - [Password management UI and testing (AB#77)](frontend/password-management.md)
 - [Social login and account security verification (AB#84)](frontend/social-login-testing.md)
+- [Administrator review moderation API (AB#147)](api/admin-review-moderation-contract.md)

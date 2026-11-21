@@ -67,6 +67,7 @@ class ProfileOwnershipTest extends TestCase
             'updated_at' => '2026-01-01',
             'password' => 'replacement password',
             'unexpected_field' => 'value',
+            'is_admin' => true,
         ];
 
         foreach ($protected as $field => $value) {

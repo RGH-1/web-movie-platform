@@ -40,6 +40,12 @@ return [
         'token' => env('TMDB_API_READ_TOKEN'),
     ],
 
+    'azure_language' => [
+        'endpoint' => env('AZURE_LANGUAGE_ENDPOINT'),
+        'key' => env('AZURE_LANGUAGE_KEY'),
+    ],
+
+
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),

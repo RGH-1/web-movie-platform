@@ -27,6 +27,11 @@ class User extends Authenticatable
         'password',
     ];
 
+    protected $attributes = [
+        'is_admin' => false,
+        'share_activity' => true,
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -35,6 +40,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'is_admin',
     ];
 
     /**
@@ -62,10 +68,6 @@ class User extends Authenticatable
         return array_keys($validator->errors()->toArray());
     }
 
-    protected $attributes = [
-        'share_activity' => true,
-    ];
-
     /** @return array<string, string> */
     protected function casts(): array
     {
@@ -74,6 +76,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'favorite_genres' => 'array',
             'share_activity' => 'boolean',
+            'is_admin' => 'boolean',
         ];
     }
 

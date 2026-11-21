@@ -21,6 +21,9 @@ class ReviewResource extends JsonResource
             'movie_id' => $this->movie_id,
             'rating' => $this->rating,
             'review_text' => $this->review_text,
+            'sentiment_label' => $this->sentiment_label,
+            'sentiment_status' => $this->sentiment_status,
+            'sentiment_score' => $this->sentiment_score,
             'author' => $author === null ? null : [
                 'id' => (string) $author->getKey(),
                 'name' => $author->name,

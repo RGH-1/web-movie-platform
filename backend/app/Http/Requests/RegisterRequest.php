@@ -71,6 +71,8 @@ class RegisterRequest extends FormRequest
                 'string',
                 'same:password',
             ],
+
+            'is_admin' => ['prohibited'],
         ];
     }
 }

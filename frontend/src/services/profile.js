@@ -66,6 +66,29 @@ export async function getPublicProfile(userId, { signal } = {}) {
   };
 }
 
+export async function getUserRelationshipList(userId, relationship, page = 1, { signal } = {}) {
+  if (!['followers', 'following'].includes(relationship)) {
+    throw new Error('Unsupported user relationship.');
+  }
+
+  const response = await api.get(
+    `/v1/users/${encodeURIComponent(userId)}/${relationship}`,
+    { params: { page }, signal },
+  );
+  const users = response.data?.data;
+  const meta = response.data?.meta;
+
+  if (!Array.isArray(users) || !Number.isInteger(meta?.current_page) ||
+      !Number.isInteger(meta?.last_page) || meta.current_page < 1 || meta.last_page < 1 ||
+      !users.every((user) => user && typeof user.id === 'string' && typeof user.name === 'string' &&
+        Number.isInteger(user.followers_count) && Number.isInteger(user.following_count) &&
+        typeof user.is_following === 'boolean')) {
+    throw new Error('Invalid relationship list response.');
+  }
+
+  return { data: users, meta };
+}
+
 export async function setUserFollow(userId, following, { signal } = {}) {
   const csrfUrl = new URL('/sanctum/csrf-cookie', api.defaults.baseURL).href;
   await api.get(csrfUrl, { signal });

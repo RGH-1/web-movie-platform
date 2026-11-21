@@ -10,6 +10,10 @@ class Review extends Model
 {
     public const STATUS_VISIBLE = 'visible';
     public const STATUS_HIDDEN = 'hidden';
+    public const SENTIMENT_PENDING = 'pending';
+    public const SENTIMENT_COMPLETED = 'completed';
+    public const SENTIMENT_FAILED = 'failed';
+    public const SENTIMENT_SKIPPED = 'skipped';
 
     protected $fillable = [
         'rating',
@@ -26,6 +30,7 @@ class Review extends Model
             'movie_id' => 'string',
             'rating' => 'integer',
             'moderated_at' => 'datetime',
+            'sentiment_score' => 'float',
         ];
     }
 
@@ -52,5 +57,31 @@ class Review extends Model
     public function moderator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    public function prepareSentimentClassification(): ?string
+    {
+        $text = is_string($this->review_text) ? trim($this->review_text) : '';
+
+        if ($text === '') {
+            $this->forceFill([
+                'sentiment_label' => null,
+                'sentiment_score' => null,
+                'sentiment_status' => self::SENTIMENT_SKIPPED,
+                'sentiment_text_hash' => null,
+            ]);
+
+            return null;
+        }
+
+        $hash = hash('sha256', $text);
+        $this->forceFill([
+            'sentiment_label' => null,
+            'sentiment_score' => null,
+            'sentiment_status' => self::SENTIMENT_PENDING,
+            'sentiment_text_hash' => $hash,
+        ]);
+
+        return $hash;
     }
 }
