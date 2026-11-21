@@ -16,6 +16,7 @@ import MyMoviesPage from "./pages/MyMoviesPage";
 import MyListsPage from "./pages/MyListsPage";
 import ListDetailsPage from "./pages/ListDetailsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
+import UserRelationshipListPage from "./pages/UserRelationshipListPage";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -78,6 +79,8 @@ function App() {
             <Route path="/forgot-password" element={<PasswordPage mode="forgot" />} />
             <Route path="/reset-password" element={<PasswordPage mode="reset" />} />
             <Route path="/users/:userId" element={<PublicProfilePage />} />
+            <Route path="/users/:userId/followers" element={<UserRelationshipListPage relationship="followers" />} />
+            <Route path="/users/:userId/following" element={<UserRelationshipListPage relationship="following" />} />
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<ProfilePage />} />
