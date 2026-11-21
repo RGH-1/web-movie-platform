@@ -35,3 +35,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Recommendation algorithm (AB#112)](architecture/recommendation-algorithm.md)
 - [Recommendation API contract (AB#112)](api/recommendations-contract.md)
 - [Recommendation acceptance cases (AB#112)](testing/recommendation-design-cases.md)
+- [Review sentiment display and verification (AB#142)](frontend/review-sentiment.md)
