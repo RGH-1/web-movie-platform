@@ -30,3 +30,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Administrator review moderation API (AB#147)](api/admin-review-moderation-contract.md)
 - [Administrator movie catalog API (AB#154)](api/admin-movie-catalog-contract.md)
 - [Administrator movie catalog frontend handoff (AB#154/155)](api/admin-movie-catalog-frontend-handoff.md)
+- [Administrator dashboard API (AB#150)](api/admin-dashboard-contract.md)
+- [AB#150 isolated MySQL stress test](testing/ab150-stress-test-report.md)

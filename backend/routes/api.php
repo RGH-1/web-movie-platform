@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AdminMovieController;
-use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\CatalogMovieController;
 use App\Http\Controllers\FollowController;
@@ -20,6 +19,8 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
+use App\Http\Controllers\AdminReviewController;
+use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -75,6 +76,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/movies/{movieId}', [AdminMovieController::class, 'show']);
             Route::patch('/movies/{movieId}', [AdminMovieController::class, 'update']);
             Route::delete('/movies/{movieId}', [AdminMovieController::class, 'destroy']);
+            Route::get('/dashboard', AdminDashboardController::class);
             Route::get('/reviews', [AdminReviewController::class, 'index']);
             Route::patch('/reviews/{review}/moderation', [AdminReviewController::class, 'update']);
         });
