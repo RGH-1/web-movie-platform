@@ -45,7 +45,10 @@ return [
         'key' => env('AZURE_LANGUAGE_KEY'),
     ],
 
-
+    'weather' => [
+        'weather_url' => env('OPEN_METEO_WEATHER_URL', 'https://api.open-meteo.com/v1/forecast'),
+        'geocoding_url' => env('OPEN_METEO_GEOCODING_URL', 'https://geocoding-api.open-meteo.com/v1/search'),
+    ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
@@ -64,6 +67,5 @@ return [
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
     ],
-
 
 ];
