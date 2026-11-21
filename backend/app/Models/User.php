@@ -62,6 +62,10 @@ class User extends Authenticatable
         return array_keys($validator->errors()->toArray());
     }
 
+    protected $attributes = [
+        'share_activity' => true,
+    ];
+
     /** @return array<string, string> */
     protected function casts(): array
     {
@@ -69,6 +73,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'favorite_genres' => 'array',
+            'share_activity' => 'boolean',
         ];
     }
 

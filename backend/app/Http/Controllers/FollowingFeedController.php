@@ -18,7 +18,9 @@ class FollowingFeedController extends Controller
             'per_page' => ['sometimes', 'integer', 'between:1,50'],
         ])->validate();
 
-        $followed = $request->user()->following()->getQuery()->select('users.id');
+        $followed = $request->user()->following()->getQuery()
+            ->where('users.share_activity', true)
+            ->select('users.id');
 
         $reviews = DB::table('reviews')
             ->joinSub(Movie::active()->select('id', 'title', 'poster_url'), 'movies', 'movies.id', '=', 'reviews.movie_id')

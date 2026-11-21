@@ -19,6 +19,7 @@ function FieldErrors({ field, errors }) {
 
 export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthenticated }) {
   const [form, setForm] = useState(() => profileToForm(profile));
+  const [shareActivity, setShareActivity] = useState(profile.share_activity ?? true);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -70,7 +71,9 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
     setMessage('');
 
     try {
-      const saved = await updateProfile(buildProfileUpdate(form, profile), {
+      const fields = buildProfileUpdate(form, profile);
+      if (shareActivity !== (profile.share_activity ?? true)) fields.share_activity = shareActivity;
+      const saved = await updateProfile(fields, {
         signal: controller.signal,
       });
       if (!controller.signal.aborted) onSaved(saved);
@@ -163,6 +166,15 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
           </div>
           <FieldErrors field="favorite_genres" errors={errors} />
         </fieldset>
+
+        <div className="form-check mb-3">
+          <label className="form-check-label">
+            <input type="checkbox" className="form-check-input" checked={shareActivity}
+              onChange={(event) => setShareActivity(event.target.checked)} />
+            Share my reviews, ratings, and public lists in the following feed
+          </label>
+          <FieldErrors field="share_activity" errors={errors} />
+        </div>
 
         <FieldErrors field="profile" errors={errors} />
         <div className="d-flex flex-wrap gap-2">
