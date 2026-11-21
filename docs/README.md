@@ -32,3 +32,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [AB#150 isolated MySQL stress test](testing/ab150-stress-test-report.md)
 - [Recommendation algorithm (AB#112)](architecture/recommendation-algorithm.md)
 - [Recommendation API contract (AB#112)](api/recommendations-contract.md)
+- [Recommendation acceptance cases (AB#112)](testing/recommendation-design-cases.md)
