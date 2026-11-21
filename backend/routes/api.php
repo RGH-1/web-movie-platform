@@ -18,6 +18,7 @@ use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 use App\Http\Controllers\AdminReviewController;
+use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -68,6 +69,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/me/profile', [ProfileController::class, 'update']);
 
         Route::prefix('admin')->middleware('can:access-admin')->group(function () {
+            Route::get('/dashboard', AdminDashboardController::class);
             Route::get('/reviews', [AdminReviewController::class, 'index']);
             Route::patch('/reviews/{review}/moderation',[AdminReviewController::class, 'update']);
         });

@@ -28,3 +28,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Password management UI and testing (AB#77)](frontend/password-management.md)
 - [Social login and account security verification (AB#84)](frontend/social-login-testing.md)
 - [Administrator review moderation API (AB#147)](api/admin-review-moderation-contract.md)
+- [Administrator dashboard API (AB#150)](api/admin-dashboard-contract.md)
+- [AB#150 isolated MySQL stress test](testing/ab150-stress-test-report.md)
