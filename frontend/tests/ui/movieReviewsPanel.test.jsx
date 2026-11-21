@@ -69,7 +69,7 @@ it('lists rating-only reviews, paginates, and opens the correct author profile',
     };
 
     open(movie, null);
-    expect(screen.getByText('Loading reviews…')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/Loading reviews/i);
     expect(await screen.findByText('Rating only')).toBeInTheDocument();
     expect(screen.getByText(/4\.25 \/ 5.*11 ratings/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: author.name })).toHaveAttribute('href', '/users/8');

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getPublicProfile, setUserFollow } from '../services/profile.js';
 import { useAuth } from '../hooks/useAuth.js';
+import ReviewSentiment from '../components/ReviewSentiment.jsx';
 
 export default function PublicProfilePage() {
     const { userId } = useParams();
@@ -29,19 +30,35 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                 if (!controller.signal.aborted) setResult({ attempt, profile });
             })
             .catch((error) => {
-                if (!controller.signal.aborted) {
-                    setResult({ attempt, missing: error.response?.status === 404 });
-                }
+                if (controller.signal.aborted) return;
+
+                const missing = error.response?.status === 404;
+
+                setResult((previous) => (
+                    !missing && previous?.profile
+                        ? {
+                            attempt,
+                            profile: previous.profile,
+                            refreshError: true,
+                        }
+                        : { attempt, missing }
+                ));
             });
 
         return () => controller.abort();
     }, [userId, attempt]);
 
-    const current = result?.attempt === attempt ? result : null;
+    const current = result?.profile
+        ? result
+        : result?.attempt === attempt ? result : null;
+
     const profile = current?.profile;
+    const refreshing = Boolean(
+        current?.profile && current.attempt !== attempt,
+    );
 
     async function toggleFollow() {
-        if (saving || !authenticated || ownProfile) return;
+        if (saving || refreshing || !authenticated || ownProfile) return;
         setSaving(true);
         setFollowError('');
         try {
@@ -74,7 +91,7 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                             </p>
                         </div>
                         {!ownProfile && !authLoading && (authenticated ? (
-                            <button type="button" className="btn btn-primary" disabled={saving}
+                            <button type="button" className="btn btn-primary" disabled={saving || refreshing}
                                 aria-pressed={profile.is_following} onClick={toggleFollow}>
                                 {saving ? 'Updating…' : profile.is_following ? 'Unfollow' : 'Follow'}
                             </button>
@@ -84,9 +101,34 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                         ))}
                     </header>
                     {followError && <p role="alert" className="text-danger">{followError}</p>}
+                    {refreshing && <p role="status">Refreshing public reviews.</p>}
+
+                    {current.refreshError && (
+                        <p role="alert" className="text-danger">
+                            Could not refresh public reviews. Showing the last loaded profile.
+                        </p>
+                    )}
                     <div className="row g-4">
                         <section className="col-12 col-lg-7" aria-labelledby="public-reviews-heading">
-                            <h2 id="public-reviews-heading" className="h4">Public reviews ({profile.statistics?.reviews_count ?? profile.reviews.length})</h2>
+                            <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                                <h2 id="public-reviews-heading" className="h4">
+                                    Public reviews ({profile.statistics?.reviews_count ?? profile.reviews.length})
+                                </h2>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-primary"
+                                    disabled={saving || refreshing}
+                                    onClick={() => setAttempt((value) => value + 1)}
+                                >
+                                    Refresh public reviews
+                                </button>
+                            </div>
+
+                            <p className="small text-body-secondary">
+                                Text sentiment is automated analysis of written reviews,
+                                separate from user star ratings.
+                            </p>
                             {profile.reviews.length ? <div className="d-grid gap-3">
                                 {profile.reviews.map((review) => <article key={review.id} className="border rounded p-3">
                                     <div className="d-flex flex-wrap justify-content-between gap-2">
@@ -94,6 +136,7 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                                         <strong>{review.rating} / 5</strong>
                                     </div>
                                     <p className="text-break mt-2 mb-0" style={{ whiteSpace: 'pre-wrap' }}>{review.review_text || 'Rating only'}</p>
+                                    <ReviewSentiment review={review} />
                                 </article>)}
                             </div> : <p>No public reviews yet.</p>}
                         </section>
