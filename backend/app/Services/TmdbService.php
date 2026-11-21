@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
+use App\Exceptions\TmdbRequestException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
-use App\Exceptions\TmdbRequestException;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 use UnexpectedValueException;
-
 
 class TmdbService
 {
@@ -23,6 +22,7 @@ class TmdbService
     ];
 
     private string $baseUrl;
+
     private string $token;
 
     public function __construct()
@@ -31,8 +31,8 @@ class TmdbService
         $token = config('services.tmdb.token');
 
         if (
-            !is_string($baseUrl) || trim($baseUrl) === '' ||
-            !is_string($token) || trim($token) === ''
+            ! is_string($baseUrl) || trim($baseUrl) === '' ||
+            ! is_string($token) || trim($token) === ''
         ) {
             throw new RuntimeException(
                 'TMDB API configuration is missing.'
@@ -51,7 +51,7 @@ class TmdbService
                 ->connectTimeout(5)
                 ->timeout(10)
                 ->get(
-                    rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/'),
+                    rtrim($this->baseUrl, '/').'/'.ltrim($endpoint, '/'),
                     $query
                 );
         } catch (ConnectionException $exception) {
@@ -60,7 +60,6 @@ class TmdbService
                 previous: $exception,
             );
         }
-
 
         if ($response->failed()) {
             throw new TmdbRequestException(
@@ -98,6 +97,31 @@ class TmdbService
         }
 
         return $this->getMovieFeed('/discover/movie', (int) ($filters['page'] ?? 1), $query);
+    }
+
+    /**
+     * Bounded recommendation-only feed.  Existing catalogue endpoints retain
+     * their ten-second transport behaviour; recommendations have a strict
+     * two-second provider budget.
+     */
+    public function recommendationDiscover(array $filters = [], float $timeoutSeconds = 2.0): array
+    {
+        $query = ['sort_by' => 'popularity.desc'];
+        if (isset($filters['genre_id'])) {
+            $query['with_genres'] = (int) $filters['genre_id'];
+        }
+
+        return $this->getRecommendationFeed('/discover/movie', $query, $timeoutSeconds);
+    }
+
+    /** @return array{data:list<array<string,mixed>>,meta:array<string,int>} */
+    public function recommendationSimilarMovies(int $movieId, float $timeoutSeconds = 2.0): array
+    {
+        if ($movieId < 1 || $movieId > 2147483647) {
+            throw new InvalidArgumentException('The TMDB movie ID must be between 1 and 2147483647.');
+        }
+
+        return $this->getRecommendationFeed("/movie/{$movieId}/similar", [], $timeoutSeconds);
     }
 
     public function getMovieGenres(): array
@@ -183,6 +207,48 @@ class TmdbService
         ];
     }
 
+    /** @return array{data:list<array<string,mixed>>,meta:array<string,int>} */
+    private function getRecommendationFeed(string $endpoint, array $query = [], float $timeoutSeconds = 2.0): array
+    {
+        $timeoutSeconds = max(0.001, min(2.0, $timeoutSeconds));
+        try {
+            $response = Http::withToken($this->token)
+                ->acceptJson()
+                ->connectTimeout($timeoutSeconds)
+                ->timeout($timeoutSeconds)
+                ->get(rtrim($this->baseUrl, '/').'/'.ltrim($endpoint, '/'), ['language' => 'en-US', 'page' => 1] + $query);
+        } catch (ConnectionException $exception) {
+            throw new TmdbRequestException('Unable to connect to the movie information service.', previous: $exception);
+        }
+        if ($response->failed()) {
+            throw new TmdbRequestException('The movie information service returned an error.', upstreamStatus: $response->status(), retryAfter: $response->header('Retry-After') ?: null);
+        }
+
+        $payload = $response->json();
+        $results = $payload['results'] ?? null;
+        if (! is_array($results) || ! array_is_list($results)) {
+            throw new UnexpectedValueException('Invalid TMDB movie feed response.');
+        }
+
+        $cards = [];
+        foreach (array_slice($results, 0, 20) as $movie) {
+            if (! is_array($movie) || ! is_int($movie['id'] ?? null) || $movie['id'] < 1 || $this->nullableText($movie['title'] ?? null) === null) {
+                continue;
+            }
+            $cards[] = [
+                'tmdb_id' => $movie['id'],
+                'title' => $this->nullableText($movie['title']),
+                'overview' => $this->nullableText($movie['overview'] ?? null),
+                'release_date' => $this->releaseDate($movie['release_date'] ?? null),
+                'poster_url' => $this->imageUrl($movie['poster_path'] ?? null, 'w342'),
+                'vote_average' => $this->movieRating($movie),
+                'genre_ids' => array_values(array_filter(is_array($movie['genre_ids'] ?? null) ? $movie['genre_ids'] : [], fn ($id): bool => is_int($id) && $id > 0)),
+            ];
+        }
+
+        return ['data' => $cards, 'meta' => ['page' => 1, 'total_pages' => 1, 'total_results' => count($cards)]];
+    }
+
     public function getMovieDetails(int $movieId): array
     {
         if ($movieId < 1 || $movieId > 2147483647) {
@@ -234,6 +300,43 @@ class TmdbService
             'cast' => $this->principalCast($credits['cast'] ?? null),
             'director' => $this->movieDirector($credits['crew'] ?? null),
             'trailer' => $this->movieTrailer($videos['results'] ?? null),
+        ];
+    }
+
+    /**
+     * Normalized detail card for recommendation enrichment only.  It mirrors
+     * the existing parser but preserves the recommendation two-second timeout.
+     */
+    public function recommendationMovieDetails(int $movieId, float $timeoutSeconds = 2.0): array
+    {
+        if ($movieId < 1 || $movieId > 2147483647) {
+            throw new InvalidArgumentException('The TMDB movie ID must be between 1 and 2147483647.');
+        }
+        $timeoutSeconds = max(0.001, min(2.0, $timeoutSeconds));
+        try {
+            $response = Http::withToken($this->token)
+                ->acceptJson()->connectTimeout($timeoutSeconds)->timeout($timeoutSeconds)
+                ->get(rtrim($this->baseUrl, '/')."/movie/{$movieId}", ['language' => 'en-US', 'append_to_response' => 'credits']);
+        } catch (ConnectionException $exception) {
+            throw new TmdbRequestException('Unable to connect to the movie information service.', previous: $exception);
+        }
+        $movie = $response->json();
+        if (! $response->ok() || ! is_array($movie) || ($movie['id'] ?? null) !== $movieId || $this->nullableText($movie['title'] ?? null) === null) {
+            throw new UnexpectedValueException('The movie information service returned an invalid movie response.');
+        }
+        $credits = is_array($movie['credits'] ?? null) ? $movie['credits'] : [];
+
+        return [
+            'tmdb_id' => $movieId,
+            'title' => $this->nullableText($movie['title']),
+            'overview' => $this->nullableText($movie['overview'] ?? null),
+            'release_date' => $this->releaseDate($movie['release_date'] ?? null),
+            'runtime_minutes' => is_int($movie['runtime'] ?? null) && $movie['runtime'] > 0 ? $movie['runtime'] : null,
+            'genres' => $this->movieGenres($movie['genres'] ?? null),
+            'poster_url' => $this->imageUrl($movie['poster_path'] ?? null, 'w342'),
+            'vote_average' => $this->movieRating($movie),
+            'cast' => $this->principalCast($credits['cast'] ?? null),
+            'director' => $this->movieDirector($credits['crew'] ?? null),
         ];
     }
 
@@ -321,13 +424,11 @@ class TmdbService
     private function principalCast(mixed $cast): array
     {
         return collect($this->arrayEntries($cast))
-            ->filter(fn (array $person): bool =>
-                is_int($person['id'] ?? null)
+            ->filter(fn (array $person): bool => is_int($person['id'] ?? null)
                 && $person['id'] > 0
                 && $this->nullableText($person['name'] ?? null) !== null
             )
-            ->sortBy(fn (array $person): int =>
-                is_int($person['order'] ?? null)
+            ->sortBy(fn (array $person): int => is_int($person['order'] ?? null)
                     ? $person['order']
                     : PHP_INT_MAX
             )
