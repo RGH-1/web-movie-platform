@@ -23,6 +23,8 @@ it('allows guests to read public content and prompts login without exposing priv
   expect(screen.getByRole('status')).toHaveTextContent('Loading profile');
   await screen.findByRole('heading', { name: 'Public author' });
   expect(screen.getByRole('link', { name: 'Log in to follow' })).toHaveAttribute('href', '/login');
+  expect(screen.getByRole('link', { name: '2 followers' })).toHaveAttribute('href', '/users/8/followers');
+  expect(screen.getByRole('link', { name: '3 following' })).toHaveAttribute('href', '/users/8/following');
   expect(screen.getByRole('link', { name: 'View movie' })).toHaveAttribute('href', '/movies/local/42');
   expect(screen.getByRole('link', { name: 'Favorites' })).toHaveAttribute('href', '/lists/4');
   expect(screen.queryByText('private@example.com')).not.toBeInTheDocument();
@@ -37,9 +39,11 @@ it('persists follow and unfollow and uses the returned counts', async () => {
   open({ id: 7 });
   fireEvent.click(await screen.findByRole('button', { name: 'Follow' }));
   expect(await screen.findByRole('button', { name: 'Unfollow' })).toBeEnabled();
-  expect(screen.getByText('3 followers · 3 following')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '3 followers' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '3 following' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Unfollow' }));
-  await waitFor(() => expect(screen.getByText('2 followers · 3 following')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('link', { name: '2 followers' })).toBeInTheDocument());
+  expect(screen.getByRole('link', { name: '3 following' })).toBeInTheDocument();
   expect(api.defaults.adapter).toHaveBeenCalledWith(expect.objectContaining({ method: 'delete', url: '/v1/users/8/follow' }));
 });
 it('hides self-follow controls', async () => {
@@ -54,7 +58,8 @@ it('keeps counts unchanged when following fails and permits retry', async () => 
   api.defaults.adapter = async () => { throw new Error('offline'); };
   fireEvent.click(screen.getByRole('button', { name: 'Follow' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not update follow status');
-  expect(screen.getByText('2 followers · 3 following')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '2 followers' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '3 following' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Follow' })).toBeEnabled();
 });
 it('shows not-found state', async () => {
