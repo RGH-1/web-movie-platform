@@ -27,6 +27,10 @@ class User extends Authenticatable
         'password',
     ];
 
+    protected $attributes = [
+        'is_admin' => false,
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -35,6 +39,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'is_admin',
     ];
 
     /**
@@ -69,6 +74,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'favorite_genres' => 'array',
+            'is_admin' => 'boolean',
         ];
     }
 

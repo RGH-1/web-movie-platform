@@ -85,3 +85,12 @@ Movie Details loads visible reviews by canonical `local_movie_id`. The platform 
 Each review shows its rating, author, creation time, and optional text. Rating-only cards show “Rating only.” Author links use the public profile route. The viewer’s edit and delete controls come from the authenticated `viewer_review` field, so they work even when the viewer’s review is outside the visible page or hidden.
 
 Deletion requires confirmation. After a successful create, edit, or delete, the review section reloads page 1 and its statistics from the API. For a first review imported through AB#102, the list uses the canonical movie ID returned by the successful submission.
+
+## Administrator moderation — AB#147
+
+Administrators can list reviews and hide or restore them through the
+[administrator moderation API](admin-review-moderation-contract.md).
+
+Public listings and rating statistics exclude hidden reviews. The private
+viewer_review context remains available to the author for editing.
+Moderation metadata is returned only by administrator endpoints.
