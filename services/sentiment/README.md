@@ -108,3 +108,16 @@ Do not run automated tests or repeated bulk smoke tests against the live endpoin
 - [Azure AI Language REST API reference](https://learn.microsoft.com/en-us/rest/api/language/)
 - [Sentiment Analysis API and confidence scores](https://learn.microsoft.com/en-us/rest/api/language/analyze-text/analyze-text/analyze-text?view=rest-language-analyze-text-2024-11-01)
 - [Azure AI Language service data limits](https://learn.microsoft.com/en-us/azure/ai-services/language-service/concepts/data-limits)
+
+## Review UI integration — AB#142
+
+Movie Details and public-profile review cards display the persisted
+classification. UI refreshes read stored results and never enqueue analysis.
+
+The job timeout is 30 seconds, exceeding the service's 20-second HTTP timeout.
+Keep queue retry_after greater than 30 seconds. Worker-recognized job failures
+mark only the current pending text revision failed.
+
+Classification writes match the pending revision in the database update.
+
+See [sentiment display and verification](../../docs/frontend/review-sentiment.md).

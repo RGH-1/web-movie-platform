@@ -94,3 +94,17 @@ Administrators can list reviews and hide or restore them through the
 Public listings and rating statistics exclude hidden reviews. The private
 viewer_review context remains available to the author for editing.
 Moderation metadata is returned only by administrator endpoints.
+
+## Sentiment display — AB#142
+
+Review cards display completed positive/neutral/negative classifications
+separately from user star ratings.
+
+Pending or failed/missing analysis uses Pending or Unavailable labels.
+Rating-only and blank reviews display Not applicable; no classification is
+inferred from their rating.
+
+Movie Details performs bounded refreshes while written reviews remain
+pending. Public-profile cards expose a manual refresh control.
+
+See [review sentiment UI and verification](../frontend/review-sentiment.md).
