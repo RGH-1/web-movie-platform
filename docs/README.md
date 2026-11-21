@@ -30,3 +30,5 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Administrator review moderation API (AB#147)](api/admin-review-moderation-contract.md)
 - [Administrator dashboard API (AB#150)](api/admin-dashboard-contract.md)
 - [AB#150 isolated MySQL stress test](testing/ab150-stress-test-report.md)
+- [Recommendation algorithm (AB#112)](architecture/recommendation-algorithm.md)
+- [Recommendation API contract (AB#112)](api/recommendations-contract.md)
