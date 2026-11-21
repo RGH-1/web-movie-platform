@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\FollowingFeedController;
 use App\Http\Controllers\LocalMovieDetailsController;
 use App\Http\Controllers\MovieDetailsController;
 use App\Http\Controllers\MovieFeedController;
@@ -49,6 +50,8 @@ Route::prefix('v1')->group(function () {
 
     // Routes available to any authenticated account.
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/feed', FollowingFeedController::class);
+
         Route::post('/users/{userId}/follow', [FollowController::class, 'store']);
         Route::delete('/users/{userId}/follow', [FollowController::class, 'destroy']);
 

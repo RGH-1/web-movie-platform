@@ -14,7 +14,16 @@ class MovieList extends Model
 
     protected function casts(): array
     {
-        return ['id' => 'string', 'is_public' => 'boolean'];
+        return ['id' => 'string', 'is_public' => 'boolean', 'published_at' => 'datetime'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (MovieList $list): void {
+            if ($list->isDirty('is_public')) {
+                $list->published_at = $list->is_public ? now() : null;
+            }
+        });
     }
 
     public function user(): BelongsTo
