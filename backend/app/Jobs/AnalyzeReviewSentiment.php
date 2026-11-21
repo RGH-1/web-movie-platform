@@ -6,6 +6,7 @@ use App\Models\Review;
 use App\Services\SentimentAnalysisService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -17,7 +18,9 @@ class AnalyzeReviewSentiment implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 10;
+    public int $timeout = 30;
+
+    public bool $failOnTimeout = true;
 
     public function __construct(
         public int $reviewId,
@@ -28,8 +31,12 @@ class AnalyzeReviewSentiment implements ShouldQueue
     {
         $review = Review::find($this->reviewId);
 
-        if ($review === null || $review->sentiment_status !== Review::SENTIMENT_PENDING ||
-            ! hash_equals((string) $review->sentiment_text_hash, $this->textHash)) {
+        if ($review === null
+            || $review->sentiment_status !== Review::SENTIMENT_PENDING
+            || ! hash_equals(
+                (string) $review->sentiment_text_hash,
+                $this->textHash,
+            )) {
             return;
         }
 
@@ -41,24 +48,34 @@ class AnalyzeReviewSentiment implements ShouldQueue
             return;
         }
 
-        $current = Review::find($this->reviewId);
-        if ($current === null || ! hash_equals((string) $current->sentiment_text_hash, $this->textHash)) {
-            return;
-        }
-
-        $current->forceFill([
+        // Check the revision in the UPDATE itself so a newer edit cannot
+        // be overwritten between a separate check and save.
+        $this->pendingRevision()->update([
             'sentiment_label' => $result['label'],
             'sentiment_score' => $result['score'],
             'sentiment_status' => Review::SENTIMENT_COMPLETED,
-        ])->saveQuietly();
+        ]);
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        $this->markFailedIfCurrent();
     }
 
     private function markFailedIfCurrent(): void
     {
-        $review = Review::find($this->reviewId);
-        if ($review !== null && $review->sentiment_status === Review::SENTIMENT_PENDING &&
-            hash_equals((string) $review->sentiment_text_hash, $this->textHash)) {
-            $review->forceFill(['sentiment_status' => Review::SENTIMENT_FAILED])->saveQuietly();
-        }
+        $this->pendingRevision()->update([
+            'sentiment_label' => null,
+            'sentiment_score' => null,
+            'sentiment_status' => Review::SENTIMENT_FAILED,
+        ]);
+    }
+
+    private function pendingRevision(): Builder
+    {
+        return Review::query()
+            ->whereKey($this->reviewId)
+            ->where('sentiment_status', Review::SENTIMENT_PENDING)
+            ->where('sentiment_text_hash', $this->textHash);
     }
 }
