@@ -19,7 +19,6 @@ class UserMovieStatusRegressionTest extends TestCase
         $this->actingAs($user, 'web');
     }
 
-
     private function statusUrl(Movie $movie): string
     {
         return "/api/v1/me/movies/{$movie->id}/status";
@@ -142,6 +141,98 @@ class UserMovieStatusRegressionTest extends TestCase
         ]);
 
         $this->assertDatabaseCount('user_movie_statuses', 1);
+    }
+
+    public function test_deactivated_movies_expose_existing_statuses_but_reject_new_watchlist_and_watched_entries(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create(['deactivated_at' => now()]);
+        $this->actAsFreshUser($user);
+
+        $this->getJson($this->statusUrl($movie))
+            ->assertOk()
+            ->assertJsonPath('data.in_watchlist', false)
+            ->assertJsonPath('data.is_watched', false);
+        $this->patchJson($this->statusUrl($movie), ['in_watchlist' => true])
+            ->assertStatus(409);
+        $this->patchJson($this->statusUrl($movie), ['is_watched' => true])
+            ->assertStatus(409);
+
+        $this->assertDatabaseMissing('user_movie_statuses', [
+            'user_id' => $user->id,
+            'movie_id' => $movie->id,
+        ]);
+    }
+
+    public function test_deactivated_movies_allow_watchlist_and_watched_history_removal(): void
+    {
+        $user = User::factory()->create();
+        $watchlistMovie = Movie::factory()->create(['deactivated_at' => now()]);
+        $watchedMovie = Movie::factory()->create(['deactivated_at' => now()]);
+        $watchlist = UserMovieStatus::create([
+            'user_id' => $user->id,
+            'movie_id' => $watchlistMovie->id,
+            'in_watchlist' => true,
+        ]);
+        $watched = UserMovieStatus::create([
+            'user_id' => $user->id,
+            'movie_id' => $watchedMovie->id,
+            'watched_at' => now(),
+        ]);
+        $this->actAsFreshUser($user);
+
+        $this->getJson($this->statusUrl($watchlistMovie))
+            ->assertOk()
+            ->assertJsonPath('data.in_watchlist', true);
+        $this->patchJson($this->statusUrl($watchlistMovie), ['in_watchlist' => false])
+            ->assertOk()
+            ->assertJsonPath('data.in_watchlist', false);
+        $this->patchJson($this->statusUrl($watchedMovie), ['is_watched' => false])
+            ->assertOk()
+            ->assertJsonPath('data.is_watched', false);
+
+        $this->assertDatabaseMissing('user_movie_statuses', ['id' => $watchlist->id]);
+        $this->assertDatabaseMissing('user_movie_statuses', ['id' => $watched->id]);
+    }
+
+    public function test_deactivated_movies_allow_both_existing_statuses_to_be_cleared_together(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create(['deactivated_at' => now()]);
+        $status = UserMovieStatus::create([
+            'user_id' => $user->id,
+            'movie_id' => $movie->id,
+            'in_watchlist' => true,
+            'watched_at' => now(),
+        ]);
+        $this->actAsFreshUser($user);
+
+        $this->patchJson($this->statusUrl($movie), [
+            'in_watchlist' => false,
+            'is_watched' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.in_watchlist', false)
+            ->assertJsonPath('data.is_watched', false);
+
+        $this->assertDatabaseMissing('user_movie_statuses', ['id' => $status->id]);
+    }
+
+    public function test_status_update_rechecks_the_movie_lifecycle_inside_the_transaction(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create();
+        $this->actAsFreshUser($user);
+
+        // Simulates a lifecycle change after a client learned the canonical ID.
+        $movie->forceFill(['deactivated_at' => now()])->save();
+
+        $this->patchJson($this->statusUrl($movie), ['is_watched' => true])
+            ->assertStatus(409);
+        $this->assertDatabaseMissing('user_movie_statuses', [
+            'user_id' => $user->id,
+            'movie_id' => $movie->id,
+        ]);
     }
 
     public function test_watched_history_pagination_excludes_other_users_and_unwatched_movies(): void

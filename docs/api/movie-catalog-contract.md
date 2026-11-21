@@ -11,6 +11,7 @@ and use it for reviews, watchlists, and list membership.
 | `GET /api/v1/movies/upcoming` | Public | Returns upcoming TMDB cards with existing active catalog IDs. |
 | `GET /api/v1/movies/{tmdbId}` | Authenticated, complete profile | Returns live TMDB details with stored administrator overrides. Performs no catalog writes. |
 | `GET /api/v1/catalog/movies/{movieId}` | Authenticated, complete profile | Reads the active catalog record by canonical ID without calling TMDB. |
+| `GET /api/v1/catalog/movies` | Authenticated, complete profile | Lists active stored local and TMDB catalog rows without calling TMDB. |
 | `POST /api/v1/movies/tmdb/{tmdbId}/resolve` | Authenticated, complete profile | Reuses an active catalog mapping or imports the movie if no mapping exists. |
 
 Send `Accept: application/json`. Protected routes use `auth:sanctum` and
@@ -36,6 +37,10 @@ and `viewer_review`. Both details routes return their payload under `data`
 and use `Cache-Control: private, no-store` if successful. Missing or deactivated local
 movies return `404 MOVIE_NOT_FOUND`. Invalid detail IDs return
 `422 INVALID_MOVIE_ID`.
+
+The catalog listing accepts bounded `page`/`per_page` (maximum 50), optional
+`search`, and optional `source=local|tmdb`. It is title/ID ordered, includes
+canonical IDs and safe card metadata, and excludes deactivated rows.
 
 ## Resolve or import a TMDB movie
 

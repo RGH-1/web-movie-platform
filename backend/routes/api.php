@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdminMovieController;
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\CatalogMovieController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowingFeedController;
 use App\Http\Controllers\LocalMovieDetailsController;
@@ -69,9 +71,14 @@ Route::prefix('v1')->group(function () {
         Route::patch('/me/profile', [ProfileController::class, 'update']);
 
         Route::prefix('admin')->middleware('can:access-admin')->group(function () {
+            Route::get('/movies', [AdminMovieController::class, 'index']);
+            Route::post('/movies', [AdminMovieController::class, 'store']);
+            Route::get('/movies/{movieId}', [AdminMovieController::class, 'show']);
+            Route::patch('/movies/{movieId}', [AdminMovieController::class, 'update']);
+            Route::delete('/movies/{movieId}', [AdminMovieController::class, 'destroy']);
             Route::get('/dashboard', AdminDashboardController::class);
             Route::get('/reviews', [AdminReviewController::class, 'index']);
-            Route::patch('/reviews/{review}/moderation',[AdminReviewController::class, 'update']);
+            Route::patch('/reviews/{review}/moderation', [AdminReviewController::class, 'update']);
         });
 
         // Application features that also require a complete profile.
@@ -86,6 +93,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/movies/search', [MovieSearchController::class, 'search']);
 
             Route::get('/catalog/movies/{movieId}', [LocalMovieDetailsController::class, 'show']);
+            Route::get('/catalog/movies', [CatalogMovieController::class, 'index']);
             Route::post('/movies/tmdb/{tmdbId}/resolve', ResolveTmdbMovieController::class);
 
             // AB#48 - Laravel movie details endpoint
