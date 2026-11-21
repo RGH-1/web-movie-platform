@@ -1,5 +1,19 @@
-# Recommendation service (proposed)
+# Recommendations — AB#112
 
-Placeholder only. Implement this as a separately running HTTP service.
+Recommendations are designed as part of the existing Laravel backend.
 
-A Laravel service class inside `backend/` is not a separate microservice.
+The implementation uses Laravel service classes, the canonical movie
+catalog, visible ratings, the requesting user's preferences and watched
+history, TMDB metadata, and optional current weather.
+
+Weather contributes to the final weighted ranking.
+
+Design documents:
+
+- [Algorithm](../../docs/architecture/recommendation-algorithm.md)
+- [API contract](../../docs/api/recommendations-contract.md)
+- [Acceptance cases](../../docs/testing/recommendation-design-cases.md)
+
+These documents specify the intended implementation. This directory does
+not currently contain a running recommendation service.
+Recommendation Service would go in [Services](../../backend/app/Services/)
