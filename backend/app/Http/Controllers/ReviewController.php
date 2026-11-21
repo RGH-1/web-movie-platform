@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListMovieReviewsRequest;
 use App\Http\Requests\WriteReviewRequest;
 use App\Http\Resources\ReviewResource;
+use App\Jobs\AnalyzeReviewSentiment;
 use App\Models\Movie;
 use App\Models\Review;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -12,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class ReviewController extends Controller
 {
@@ -53,14 +55,15 @@ class ReviewController extends Controller
         $id = $this->movieKey($movieId);
 
         try {
-            $review = DB::transaction(function () use ($request, $id): Review {
+            [$review, $textHash] = DB::transaction(function () use ($request, $id): array {
                 $movie = Movie::query()->active()->lockForUpdate()->findOrFail($id);
 
                 $review = $movie->reviews()->make($request->validated());
                 $review->user()->associate($request->user());
+                $textHash = $review->prepareSentimentClassification();
                 $review->save();
 
-                return $review;
+                return [$review, $textHash];
             });
         } catch (UniqueConstraintViolationException) {
             return response()->json([
@@ -69,6 +72,8 @@ class ReviewController extends Controller
             ], 409);
         }
 
+        $this->dispatchSentiment($review, $textHash);
+
         return (new ReviewResource($review->load('user:id,name')))
             ->response()
             ->setStatusCode(201);
@@ -76,7 +81,17 @@ class ReviewController extends Controller
 
     public function update(WriteReviewRequest $request, Review $review): ReviewResource
     {
-        $review->update($request->validated());
+        $attributes = $request->validated();
+        $textChanged = array_key_exists('review_text', $attributes)
+            && $attributes['review_text'] !== $review->review_text;
+
+        $review->fill($attributes);
+        $textHash = $textChanged ? $review->prepareSentimentClassification() : null;
+        $review->save();
+
+        if ($textChanged) {
+            $this->dispatchSentiment($review, $textHash);
+        }
 
         return new ReviewResource($review->refresh()->load('user:id,name'));
     }
@@ -94,5 +109,21 @@ class ReviewController extends Controller
         abort_if($id === false || (string) $id !== $value, 404, 'Movie not found.');
 
         return $id;
+    }
+
+    private function dispatchSentiment(Review $review, ?string $textHash): void
+    {
+        if ($textHash === null) {
+            return;
+        }
+
+        try {
+            AnalyzeReviewSentiment::dispatch($review->id, $textHash)
+                ->onQueue('sentiment')
+                ->afterCommit();
+        } catch (Throwable) {
+            // Queue failures must not turn an already-saved review into an API failure.
+            $review->forceFill(['sentiment_status' => Review::SENTIMENT_FAILED])->saveQuietly();
+        }
     }
 }
