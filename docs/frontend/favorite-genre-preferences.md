@@ -32,7 +32,7 @@ The discovery genre endpoint remains unchanged.
 
 ## Migration
 
-2026_11_22_150000_normalize_favorite_genres_to_tmdb_ids converts existing
+2026_11_22_154049_normalize_favorite_genre_to_tmdb_ids converts existing
 supported slugs to integer IDs in place.
 
 It preserves selection order, empty lists, database null, and updated_at.
