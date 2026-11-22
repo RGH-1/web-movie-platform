@@ -22,6 +22,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
+use App\Http\Controllers\MovieNightController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -110,6 +111,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'show']);
 
             Route::patch('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'update']);
+
+
+            Route::get('/movie-nights', [MovieNightController::class, 'index']);
+            Route::post('/movie-nights', [MovieNightController::class, 'store']);
+            Route::get('/movie-nights/{movieNight}',[MovieNightController::class, 'show']);
+            Route::patch('/movie-nights/{movieNight}',[MovieNightController::class, 'update']);
+            Route::post('/movie-nights/{movieNight}/cancel',[MovieNightController::class, 'cancel']);
         });
     });
 });

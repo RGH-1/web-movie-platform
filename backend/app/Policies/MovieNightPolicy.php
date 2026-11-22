@@ -14,7 +14,14 @@ class MovieNightPolicy
 
     public function view(User $user, MovieNight $night): bool
     {
-        return $this->organizes($user, $night);
+        if ($this->organizes($user, $night)) {
+            return true;
+        }
+
+        return $night->status !== MovieNight::STATUS_DRAFT
+            && $night->participants()
+                ->whereKey($user->getKey())
+                ->exists();
     }
 
     public function update(User $user, MovieNight $night): bool

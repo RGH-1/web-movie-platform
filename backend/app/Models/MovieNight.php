@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Throwable;
 
 class MovieNight extends Model
@@ -261,5 +263,32 @@ class MovieNight extends Model
             self::STATUS_SCHEDULED,
             self::STATUS_FINALIZED,
         ], true);
+    }
+
+
+    public function participants(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'movie_night_participants',
+            'movie_night_id',
+            'user_id',
+        )->withTimestamps();
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $visible) use ($user): void {
+            $visible->where('movie_nights.organizer_id', $user->getKey())
+                ->orWhere(function (Builder $participant) use ($user): void {
+                    $participant
+                        ->where('movie_nights.status', '!=', self::STATUS_DRAFT)
+                        ->whereHas(
+                            'participants',
+                            fn (Builder $members): Builder => $members
+                                ->whereKey($user->getKey()),
+                        );
+                });
+        });
     }
 }
