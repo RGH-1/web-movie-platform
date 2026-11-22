@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Review;
 use App\Models\User;
+use App\Models\MovieNight;
+use App\Policies\MovieNightPolicy;
 use App\Policies\ReviewPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::policy(Review::class, ReviewPolicy::class);
+        Gate::policy(MovieNight::class, MovieNightPolicy::class);
 
         ResetPassword::createUrlUsing(
             fn ($user, string $token) => config('auth.password_reset_url').'?'.http_build_query([
