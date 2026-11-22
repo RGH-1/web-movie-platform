@@ -15,6 +15,7 @@ import MovieDetailNavigation from "./pages/MovieDetailNavigation";
 import MyMoviesPage from "./pages/MyMoviesPage";
 import MyListsPage from "./pages/MyListsPage";
 import ListDetailsPage from "./pages/ListDetailsPage";
+import PublicListsPage from "./pages/PublicListsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import FollowingFeedPage from "./pages/FollowingFeedPage";
 import UserRelationshipListPage from "./pages/UserRelationshipListPage";
@@ -59,6 +60,9 @@ function Home() {
                         <Link to="/my-lists" className="btn btn-outline-primary">
                             My Lists
                         </Link>
+                        <Link to="/lists/public" className="btn btn-outline-primary">
+                            Public movie lists
+                        </Link>
                         <Link to="/my-movies" className="btn btn-primary">
                             My Movies
                         </Link>
@@ -97,6 +101,7 @@ function App() {
                 />
                 <Route path="/my-movies" element={<MyMoviesPage />} />
                 <Route path="/my-lists" element={<MyListsPage />} />
+                <Route path="/lists/public" element={<PublicListsPage />} />
                 <Route path="/lists/:listId" element={<ListDetailsPage />} />
                 <Route path="/movies/local/:movieId" element={<MovieDetailNavigation />} />
             </Route>

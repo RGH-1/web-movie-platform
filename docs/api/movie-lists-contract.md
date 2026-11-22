@@ -17,7 +17,7 @@ Use the existing explicit TMDB resolve endpoint first if a movie has no catalog 
 | Method and path (under /api/v1) | Behavior |
 | --- | --- |
 | GET /me/lists | Paginated summaries of the signed-in user's lists, including private lists. |
-| GET /lists/public | Paginated public-list discovery for signed-in users; available for Sprint 4. |
+| GET /lists/public | Paginated public-list discovery for signed-in users. Used by [Public movie lists](../frontend/public-movie-lists.md) (AB#109). |
 | GET /lists/{listId} | Summary plus paginated movie summaries; public or owner-only private access. |
 | POST /lists | Create an owned list, 201. |
 | PATCH /lists/{listId} | Update owned list metadata, 200. |

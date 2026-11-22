@@ -46,7 +46,7 @@ class OAuthController extends Controller
         );
     }
 
-    public function redirect(string $provider): RedirectResponse
+    public function redirect(Request $request, string $provider): RedirectResponse
     {
         $this->validateProvider($provider);
 
@@ -58,7 +58,17 @@ class OAuthController extends Controller
             abort(503, 'This OAuth provider is not configured.');
         }
 
-        return Socialite::driver($provider)->redirect();
+        $response = Socialite::driver($provider)->redirect();
+
+        $returnTo = $request->query('return_to');
+        $request->session()->put(
+            "oauth.list_return_to.{$provider}",
+            is_string($returnTo) && preg_match('~\A/lists/(?:[1-9][0-9]{0,18}|public(?:\?page=[1-9][0-9]{0,15})?)\z~', $returnTo)
+                ? $returnTo
+                : null
+        );
+
+        return $response;
     }
 
     public function callback(
@@ -185,6 +195,8 @@ class OAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->away($this->frontendUrl());
+        $returnTo = $request->session()->pull("oauth.list_return_to.{$provider}") ?? '';
+
+        return redirect()->away($this->frontendUrl() . $returnTo);
     }
 }

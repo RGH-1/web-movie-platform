@@ -142,9 +142,17 @@ function ProfileContent({ userId, ownProfile, authenticated, authLoading }) {
                         </section>
                         <section className="col-12 col-lg-5" aria-labelledby="public-lists-heading">
                             <h2 id="public-lists-heading" className="h4">Public lists ({profile.statistics?.public_lists_count ?? profile.public_lists.length})</h2>
+                            {!authenticated && !authLoading && profile.public_lists.length > 0 && (
+                                <p id="public-list-sign-in" className="small text-body-secondary">
+                                    Sign in to open a movie list.
+                                </p>
+                            )}
                             {profile.public_lists.length ? <div className="d-grid gap-3">
                                 {profile.public_lists.map((list) => <article key={list.id} className="border rounded p-3">
-                                    <Link className="text-break" to={`/lists/${encodeURIComponent(list.id)}`}>{list.name}</Link>
+                                    <Link className="text-break" to={`/lists/${encodeURIComponent(list.id)}`}
+                                        aria-describedby={!authenticated && !authLoading ? 'public-list-sign-in' : undefined}>
+                                        {list.name}
+                                    </Link>
                                     {list.description && <p className="text-break mt-2">{list.description}</p>}
                                     <p className="small mb-0">{list.movies_count} movies</p>
                                 </article>)}

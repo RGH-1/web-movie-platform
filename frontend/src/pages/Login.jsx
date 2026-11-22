@@ -56,6 +56,10 @@ const oauthErrorMessages = {
 function Login() {
     const navigate = useNavigate();
     const location = useLocation();
+    const from = location.state?.from;
+    const listReturnTo = /^\/lists\/(?:public|[1-9][0-9]{0,18})$/.test(from?.pathname)
+        ? `${from.pathname}${from.search ?? ""}`
+        : undefined;
     const [form, setForm] = useState({
         email: "",
         password: "",
@@ -130,9 +134,6 @@ function Login() {
                 form.email.trim().toLowerCase(),
                 form.password,
             );
-
-            // Get the page the user originally wanted to visit
-            const from = location.state?.from;
 
             // Build the original URL, including query parameters
             const destination =
@@ -287,7 +288,7 @@ function Login() {
                                 </button>
                             </form>
 
-                            <SocialLoginButtons />
+                            <SocialLoginButtons returnTo={listReturnTo} />
 
                             <p className="text-center mt-4 mb-0">
                                 Don't have an account?{" "}

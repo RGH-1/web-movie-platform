@@ -91,6 +91,36 @@ class OAuthCallbackTest extends TestCase
         $this->assertAuthenticatedAs($user, 'web');
     }
 
+    #[DataProvider('providers')]
+    public function test_successful_social_login_returns_to_the_requested_movie_list(string $provider): void
+    {
+        Socialite::fake($provider, SocialiteUser::fake([
+            'id' => 'list-viewer',
+            'email' => 'list-viewer@example.com',
+            'email_verified' => true,
+        ]));
+
+        $path = '/lists/9007199254740993';
+        $this->get("/auth/{$provider}/redirect?" . http_build_query(['return_to' => $path]))
+            ->assertRedirect();
+        $this->get("/auth/{$provider}/callback")
+            ->assertRedirect('http://127.0.0.1:5173' . $path)
+            ->assertSessionMissing("oauth.list_return_to.{$provider}");
+    }
+
+    public function test_external_destination_does_not_override_social_login_landing_page(): void
+    {
+        Socialite::fake('google', SocialiteUser::fake([
+            'id' => 'list-viewer',
+            'email' => 'list-viewer@example.com',
+            'email_verified' => true,
+        ]));
+
+        $this->get('/auth/google/redirect?' . http_build_query(['return_to' => '//example.com/lists/1']))
+            ->assertRedirect();
+        $this->get('/auth/google/callback')->assertRedirect('http://127.0.0.1:5173');
+    }
+
     #[DataProvider('emailRequiredProviders')]
     public function test_existing_social_account_logs_into_same_user(
         string $provider,
