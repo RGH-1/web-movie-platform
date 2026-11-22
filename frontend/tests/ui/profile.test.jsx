@@ -283,11 +283,13 @@ describe('profile editing and errors', () => {
     openProfile();
     await openEditor(user);
     await user.type(screen.getByLabelText('Bio (optional)'), 'Retain me');
+    await user.click(screen.getByLabelText('Family'));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       failure === 419 ? 'security session expired' : 'couldn’t confirm',
     );
     expect(screen.getByLabelText('Bio (optional)')).toHaveValue('Retain me');
+    expect(screen.getByLabelText('Family')).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
     expect(screen.queryByText('Your profile was saved.')).not.toBeInTheDocument();
   });
@@ -373,4 +375,52 @@ describe('completion guidance', () => {
     expect(screen.getByText('No bio added yet.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Complete your profile' })).not.toBeInTheDocument();
   });
+});
+
+it('saves numeric genres, reloads selections, enforces five choices, and clears them', async () => {
+  const user = userEvent.setup();
+  savedProfile.favorite_genres = [878];
+
+  const view = openProfile();
+  await openEditor(user);
+
+  expect(screen.getByLabelText('Science Fiction')).toBeChecked();
+
+  for (const label of ['Family', 'Music', 'History', 'War']) {
+    await user.click(screen.getByLabelText(label));
+  }
+
+  expect(screen.getByLabelText('TV Movie')).toBeDisabled();
+
+  await user.click(screen.getByLabelText('Music'));
+  expect(screen.getByLabelText('TV Movie')).toBeEnabled();
+  await user.click(screen.getByLabelText('TV Movie'));
+
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await screen.findByText('Your profile was saved.');
+
+  expect(patches[0].favorite_genres).toEqual([
+    878, 10751, 36, 10752, 10770,
+  ]);
+
+  expect(screen.getByText('Family')).toBeInTheDocument();
+  expect(screen.getByText('Science Fiction')).toBeInTheDocument();
+
+  view.unmount();
+  openProfile();
+  await openEditor(user);
+
+  for (const label of ['Science Fiction', 'Family', 'History', 'War', 'TV Movie']) {
+    expect(screen.getByLabelText(label)).toBeChecked();
+    await user.click(screen.getByLabelText(label));
+  }
+
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await screen.findByText('Your profile was saved.');
+
+  expect(patches.at(-1).favorite_genres).toEqual([]);
+  expect(screen.getByText('No favorite genres selected yet.')).toBeInTheDocument();
+
+  await openEditor(user);
+  expect(screen.getByLabelText('Family')).not.toBeChecked();
 });

@@ -86,3 +86,34 @@ test('a missing email remains absent while unrelated Facebook profile fields are
     name: 'Updated Sam', bio: 'Movie fan', favorite_genres: [18],
   });
 });
+
+test('genre IDs reject numeric strings, fractions, and unsupported TV genres', () => {
+  const form = profileToForm(profile);
+
+  for (const favorite_genres of [
+    ['878'],
+    [28.5],
+    [true],
+    [10759],
+    [999999],
+  ]) {
+    assert.ok(
+      validateProfileForm(
+        { ...form, favorite_genres },
+        profile,
+      ).favorite_genres,
+    );
+  }
+
+  const selected = [10751, 36, 10402, 10770, 10752];
+
+  assert.deepEqual(
+    validateProfileForm({ ...form, favorite_genres: selected }, profile),
+    {},
+  );
+  assert.deepEqual(
+    buildProfileUpdate({ ...form, favorite_genres: selected }, profile)
+      .favorite_genres,
+    selected,
+  );
+});
