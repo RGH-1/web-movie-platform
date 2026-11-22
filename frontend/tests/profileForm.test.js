@@ -5,15 +5,15 @@ import {
 } from '../src/utils/profileForm.js';
 
 const profile = {
-  id: 1, name: 'Sam', email: 'sam@example.com', bio: null, favorite_genres: ['drama'],
+  id: 1, name: 'Sam', email: 'sam@example.com', bio: null, favorite_genres: [18],
 };
 
 test('editing prefills fields without mutating saved profile', () => {
   const form = profileToForm(profile);
   assert.equal(form.bio, '');
   assert.equal(form.current_password, '');
-  form.favorite_genres.push('comedy');
-  assert.deepEqual(profile.favorite_genres, ['drama']);
+  form.favorite_genres.push(35);
+  assert.deepEqual(profile.favorite_genres, [18]);
 });
 
 test('normalizes editable fields and clears blank optional values', () => {
@@ -57,12 +57,12 @@ test('length limits count Unicode code points', () => {
 
 test('genre rules accept empty or five choices and reject invalid selections', () => {
   const form = profileToForm(profile);
-  for (const favorite_genres of [[], ['action', 'drama', 'comedy', 'crime', 'mystery']]) {
+  for (const favorite_genres of [[], [28, 18, 35, 80, 9648]]) {
     assert.deepEqual(validateProfileForm({ ...form, favorite_genres }, profile), {});
   }
   for (const favorite_genres of [
-    ['drama', 'drama'], ['unknown'],
-    ['action', 'drama', 'comedy', 'crime', 'mystery', 'horror'],
+    [18, 18], ['unknown'],
+    [28, 18, 35, 80, 9648, 27],
   ]) {
     assert.ok(validateProfileForm({ ...form, favorite_genres }, profile).favorite_genres);
   }
@@ -83,6 +83,6 @@ test('a missing email remains absent while unrelated Facebook profile fields are
   assert.equal(emailIsChanging(form, facebookProfile), false);
   assert.deepEqual(validateProfileForm(form, facebookProfile), {});
   assert.deepEqual(buildProfileUpdate(form, facebookProfile), {
-    name: 'Updated Sam', bio: 'Movie fan', favorite_genres: ['drama'],
+    name: 'Updated Sam', bio: 'Movie fan', favorite_genres: [18],
   });
 });

@@ -1,18 +1,28 @@
-export const GENRES = {
-  action: 'Action',
-  adventure: 'Adventure',
-  animation: 'Animation',
-  comedy: 'Comedy',
-  crime: 'Crime',
-  documentary: 'Documentary',
-  drama: 'Drama',
-  fantasy: 'Fantasy',
-  horror: 'Horror',
-  mystery: 'Mystery',
-  romance: 'Romance',
-  'science-fiction': 'Science fiction',
-  thriller: 'Thriller',
-};
+export const GENRES = Object.freeze({
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Science Fiction',
+  10770: 'TV Movie',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western',
+});
+
+export const GENRE_OPTIONS = Object.entries(GENRES)
+  .map(([id, label]) => ({ id: Number(id), label }))
+  .sort((left, right) => left.label.localeCompare(right.label));
 
 export function profileToForm(profile) {
   return {
@@ -20,7 +30,7 @@ export function profileToForm(profile) {
     // Keep null in the API model, but use an empty input value for the form.
     email: profile.email ?? '',
     bio: profile.bio ?? '',
-    favorite_genres: [...profile.favorite_genres],
+    favorite_genres: [...(profile.favorite_genres ?? [])],
     current_password: '',
   };
 }
@@ -47,9 +57,12 @@ export function validateProfileForm(form, profile) {
     errors.bio = ['Your bio must be at most 500 characters.'];
   }
   if (
+    !Array.isArray(form.favorite_genres) ||
     form.favorite_genres.length > 5 ||
     new Set(form.favorite_genres).size !== form.favorite_genres.length ||
-    form.favorite_genres.some((genre) => !Object.hasOwn(GENRES, genre))
+    form.favorite_genres.some(
+      (genre) => !Number.isInteger(genre) || !Object.hasOwn(GENRES, genre),
+    )
   ) {
     errors.favorite_genres = ['Choose up to five different supported genres.'];
   }

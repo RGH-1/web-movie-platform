@@ -48,7 +48,7 @@ function HomeProbe() {
       <h1>Test home</h1>
       <p>{user?.name ?? 'Guest'}</p>
       <ProfileCompletionNotice completion={profileCompletion} />
-      <button type="button" onClick={() => api.get('/v1/movies/search').catch(() => {})}>
+      <button type="button" onClick={() => api.get('/v1/movies/search').catch(() => { })}>
         Request restricted feature
       </button>
     </main>
@@ -209,7 +209,7 @@ describe('profile editing and errors', () => {
     expect(screen.getByText('Updated Sam')).toBeInTheDocument();
     expect(screen.getByText('Movie fan')).toBeInTheDocument();
     expect(patches).toEqual([{
-      name: 'Updated Sam', bio: 'Movie fan', favorite_genres: ['drama'],
+      name: 'Updated Sam', bio: 'Movie fan', favorite_genres: [18],
     }]);
     const csrfIndex = requests.findIndex((request) => request.url.endsWith('/sanctum/csrf-cookie'));
     const patchIndex = requests.findIndex((request) => request.method === 'patch');
@@ -251,10 +251,12 @@ describe('profile editing and errors', () => {
     const user = userEvent.setup();
     const normal = respond;
     respond = async (config) => config.method === 'patch'
-      ? response(config, 422, { errors: {
-        email: ['The email has already been taken.'],
-        'favorite_genres.0': ['This genre is not supported.'],
-      } }) : normal(config);
+      ? response(config, 422, {
+        errors: {
+          email: ['The email has already been taken.'],
+          'favorite_genres.0': ['This genre is not supported.'],
+        }
+      }) : normal(config);
     openProfile();
     await openEditor(user);
     await user.clear(screen.getByLabelText('Email'));

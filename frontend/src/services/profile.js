@@ -11,7 +11,9 @@ function readProfile(body) {
     (profile.bio != null && typeof profile.bio !== 'string') ||
     (profile.favorite_genres != null &&
       (!Array.isArray(profile.favorite_genres) ||
-        !profile.favorite_genres.every((genre) => typeof genre === 'string')))
+        !profile.favorite_genres.every(
+          (genre) => Number.isInteger(genre) && genre > 0,
+        )))
   ) {
     throw new Error('Unexpected profile response.');
   }
@@ -79,10 +81,10 @@ export async function getUserRelationshipList(userId, relationship, page = 1, { 
   const meta = response.data?.meta;
 
   if (!Array.isArray(users) || !Number.isInteger(meta?.current_page) ||
-      !Number.isInteger(meta?.last_page) || meta.current_page < 1 || meta.last_page < 1 ||
-      !users.every((user) => user && typeof user.id === 'string' && typeof user.name === 'string' &&
-        Number.isInteger(user.followers_count) && Number.isInteger(user.following_count) &&
-        typeof user.is_following === 'boolean')) {
+    !Number.isInteger(meta?.last_page) || meta.current_page < 1 || meta.last_page < 1 ||
+    !users.every((user) => user && typeof user.id === 'string' && typeof user.name === 'string' &&
+      Number.isInteger(user.followers_count) && Number.isInteger(user.following_count) &&
+      typeof user.is_following === 'boolean')) {
     throw new Error('Invalid relationship list response.');
   }
 
@@ -98,7 +100,7 @@ export async function setUserFollow(userId, following, { signal } = {}) {
     : await api.delete(path, { signal });
   const data = response.data?.data;
   if (data?.id !== userId || typeof data.is_following !== 'boolean' ||
-      !Number.isInteger(data.followers_count) || !Number.isInteger(data.following_count)) {
+    !Number.isInteger(data.followers_count) || !Number.isInteger(data.following_count)) {
     throw new Error('Invalid follow response.');
   }
   return {
