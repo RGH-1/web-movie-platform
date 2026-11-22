@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminMovieController;
+use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\CatalogMovieController;
 use App\Http\Controllers\FollowController;
@@ -13,14 +15,13 @@ use App\Http\Controllers\MovieSearchController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
+use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ResolveTmdbMovieController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
-use App\Http\Controllers\AdminReviewController;
-use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -83,6 +84,7 @@ Route::prefix('v1')->group(function () {
 
         // Application features that also require a complete profile.
         Route::middleware('profile.complete')->group(function () {
+            Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('throttle:recommendations');
             Route::post('/lists', [MovieListController::class, 'store']);
             Route::patch('/lists/{listId}', [MovieListController::class, 'update']);
             Route::delete('/lists/{listId}', [MovieListController::class, 'destroy']);

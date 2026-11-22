@@ -27,6 +27,8 @@ class WeatherService
 
     private const CLOUDY_CODES = [3, 45, 48];
 
+    public function __construct(private ProviderAttemptBudget $budget) {}
+
     /**
      * Resolve an optional location without exposing it in the normalized result.
      * Coordinates take precedence when both a coordinate pair and city are supplied.
@@ -69,6 +71,10 @@ class WeatherService
             $cached = Cache::get($key);
             if (is_array($cached)) {
                 return $cached;
+            }
+
+            if (! $this->budget->allowWeather()) {
+                return $this->unavailable(true);
             }
 
             $result = $this->requestWeather($latitude, $longitude);
@@ -266,9 +272,9 @@ class WeatherService
     }
 
     /** @return array{status: string, condition: null, temperature_c: null, valid_at: null} */
-    private function unavailable(): array
+    private function unavailable(bool $budgetExhausted = false): array
     {
-        return ['status' => 'unavailable', 'condition' => null, 'temperature_c' => null, 'valid_at' => null];
+        return ['status' => 'unavailable', 'condition' => null, 'temperature_c' => null, 'valid_at' => null] + ($budgetExhausted ? ['_provider_budget_exhausted' => true] : []);
     }
 
     /** @return array{status: string, condition: null, temperature_c: null, valid_at: null} */
@@ -309,8 +315,15 @@ class WeatherService
                     $lock->release();
                 }
             }
+
+            // Wait briefly for the in-flight owner.  The callbacks re-check
+            // cache state before doing I/O, so this coalesces equivalent
+            // misses instead of issuing a second Open-Meteo request.
+            return $lock->block(2, $callback);
         } catch (Throwable) {
-            // Array/file cache drivers and lock contention still fall back safely.
+            // The array test driver has no cross-process semantics; production
+            // must use a shared atomic cache driver.  Preserve the existing
+            // safe fallback rather than surfacing a weather failure as 500.
         }
 
         return $callback();
