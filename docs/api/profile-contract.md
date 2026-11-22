@@ -276,6 +276,10 @@ The endpoints return only id, name, email, bio, and favorite_genres.
 They always select the authenticated account. Profile completion
  enforcement remains a separate task (AB#33).
 
+The own-profile response also includes `data.can_access_admin` for admin
+navigation (AB#152). Laravel calculates this capability and accepts no
+client-supplied value for it.
+
 ## Profile completion (AB#33)
 
 A profile is complete when its trimmed name is a nonempty string of at
