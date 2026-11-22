@@ -48,7 +48,7 @@ class LoginLogoutTest extends TestCase
             'email' => ' SAM@EXAMPLE.COM ',
             'password' => ' spaced passphrase ',
         ])->assertOk()
-            ->assertExactJson(['data' => $user->only(['id', 'name', 'email'])])
+            ->assertExactJson(['data' => $user->only(['id', 'name', 'email']) + ['can_access_admin' => false]])
             ->assertCookie(config('session.cookie'));
 
         $this->assertAuthenticatedAs($user, 'web');
