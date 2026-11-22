@@ -33,11 +33,11 @@ class ProfileTest extends TestCase
 
     public function test_updates_normalize_fields_and_preserve_omitted_values(): void
     {
-        $user = User::factory()->create(['bio' => 'Original', 'favorite_genres' => ['drama']]);
+        $user = User::factory()->create(['bio' => 'Original', 'favorite_genres' => [18]]);
         $this->actingAs($user, 'web')->patchJson(self::URL, ['name' => '  New Name  '])
             ->assertOk()->assertJsonPath('data.name', 'New Name')
             ->assertJsonPath('data.bio', 'Original')
-            ->assertJsonPath('data.favorite_genres', ['drama']);
+            ->assertJsonPath('data.favorite_genres', [18]);
         $this->patchJson(self::URL, ['bio' => '   ', 'favorite_genres' => []])
             ->assertOk()->assertJsonPath('data.bio', null)
             ->assertJsonPath('data.favorite_genres', []);
@@ -69,10 +69,10 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
         $this->actingAs($user, 'web')->patchJson(self::URL, [
-            'favorite_genres' => ['science-fiction', 'mystery'],
-        ])->assertOk()->assertJsonPath('data.favorite_genres', ['science-fiction', 'mystery']);
-        $this->assertSame(['science-fiction', 'mystery'], $user->fresh()->favorite_genres);
-        $this->getJson(self::URL)->assertJsonPath('data.favorite_genres', ['science-fiction', 'mystery']);
+            'favorite_genres' => [878, 9648],
+        ])->assertOk()->assertJsonPath('data.favorite_genres', [878, 9648]);
+        $this->assertSame([878, 9648], $user->fresh()->favorite_genres);
+        $this->getJson(self::URL)->assertJsonPath('data.favorite_genres', [878, 9648]);
     }
 
     public function test_invalid_updates_save_nothing(): void
@@ -85,9 +85,9 @@ class ProfileTest extends TestCase
             [['email' => 'invalid'], 'email'],
             [['favorite_genres' => null], 'favorite_genres'],
             [['favorite_genres' => ['unknown']], 'favorite_genres.0'],
-            [['favorite_genres' => ['drama', 'drama']], 'favorite_genres.0'],
-            [['favorite_genres' => ['action', 'drama', 'comedy', 'crime', 'horror', 'mystery']], 'favorite_genres'],
-            [['favorite_genres' => ['one' => 'drama']], 'favorite_genres'],
+            [['favorite_genres' => [18, 18]], 'favorite_genres.0'],
+            [['favorite_genres' => [28, 18, 35, 80, 27, 9648]], 'favorite_genres'],
+            [['favorite_genres' => ['one' => 18]], 'favorite_genres'],
             [['role' => null, 'name' => 'Changed'], 'role'],
             [['id' => 999, 'name' => 'Changed'], 'id'],
             [[], 'profile'],

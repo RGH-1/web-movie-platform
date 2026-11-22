@@ -103,7 +103,7 @@ class RecommendationApiTest extends TestCase
     public function test_local_genre_and_quality_buckets_keep_older_high_value_movies_when_catalog_exceeds_two_hundred(): void
     {
         config(['services.tmdb.base_url' => null, 'services.tmdb.token' => null]);
-        $user = User::factory()->create(['favorite_genres' => ['mystery']]);
+        $user = User::factory()->create(['favorite_genres' => [9648]]);
         $genreMovie = Movie::factory()->create(['title' => 'Genre bucket', 'genres' => [['tmdb_id' => 9648, 'name' => 'Mystery']]]);
         $qualityMovie = Movie::factory()->tmdb(990001)->create(['title' => 'Quality bucket', 'vote_average' => 10]);
         Movie::factory()->count(205)->create();

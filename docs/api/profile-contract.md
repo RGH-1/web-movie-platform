@@ -16,7 +16,7 @@ add a nullable `bio` field.
 | `email` | Yes | Account owner, with current-password confirmation when the address changes | Trim and lowercase before validation. Require a valid RFC email address, at most 255 characters. The address must be unique in `users.email`, excluding the account owner's existing record. |
 | `bio` | No | Account owner | Accept `null` or plain text up to 500 characters after trimming. Store a blank bio as `null`. |
 | `id` | System assigned | Server only | Return the existing user ID as an integer. |
-| `favorite_genres` | No | Account owner | A JSON list of up to five distinct genre slugs from the supported list. Send `[]` to clear it. |
+| `favorite_genres` | No | Account owner | A JSON list of up to five distinct supported TMDB movie genre IDs, supplied as integers. Send `[]` to clear it. |
 
 Store the initial profile on the existing `users` record. Registration
 collects `name` and `email`. After registration, users can personalize
@@ -33,19 +33,28 @@ contracts before adding either field to the profile editor.
 
 ### Favorite genres
 
-The frontend displays human-readable labels and submits the corresponding
-slugs. The initial supported slugs are `action`, `adventure`, `animation`,
-`comedy`, `crime`, `documentary`, `drama`, `fantasy`, `horror`, `mystery`,
-`romance`, `science-fiction`, and `thriller`.
+AB#115 stores favorite genres in the existing users.favorite_genres JSON
+column as supported TMDB movie genre integer IDs.
 
-For a user with no selected genres, return `favorite_genres: []`, including
-for accounts created before this field was added. When a profile update
-includes `favorite_genres`, replace the whole selection. When the field
-is omitted, keep the current selection.
+The frontend displays readable names and submits IDs. For example,
+Science Fiction and Mystery are represented by [878, 9648].
 
-Reject `null`, duplicate slugs, unknown slugs, and lists with more than
-five entries. Genre slugs describe the user's preferences. They do not
-change the results returned by movie search.
+The supported mapping is defined in App\Support\MovieGenres and mirrored
+by the profile editor's genre options. Profile saving does not require a
+live TMDB request.
+
+Return favorite_genres: [] when the database value is null or empty.
+Including the field in PATCH replaces the complete selection.
+Omitting it preserves the selection. An empty array clears it.
+
+Reject null, non-list values, numeric strings, unsupported IDs,
+duplicates, and lists containing more than five entries.
+
+Preferences contribute to recommendation candidate selection and final
+genre scoring. They do not change the movie-search contract.
+
+See [Favorite genre preferences](../frontend/favorite-genre-preferences.md)
+for migration, frontend behavior, and verification.
 
 ## Protected fields and ownership
 
@@ -79,21 +88,7 @@ is the authenticated user model, and `Rule` is
 `Illuminate\Validation\Rule`.
 
 ```php
-$supportedGenres = [
-    'action',
-    'adventure',
-    'animation',
-    'comedy',
-    'crime',
-    'documentary',
-    'drama',
-    'fantasy',
-    'horror',
-    'mystery',
-    'romance',
-    'science-fiction',
-    'thriller',
-];
+$supportedGenres = \App\Support\MovieGenres::ids();
 
 return [
     'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -174,7 +169,7 @@ Updating favourite genres:
 
 ```json
 {
-  "favorite_genres": ["science-fiction", "mystery"]
+  "favorite_genres": [878, 9648]
 }
 ```
 
@@ -205,7 +200,7 @@ Both endpoints return the full profile. Always include `bio`, using
     "name": "Sam Example",
     "email": "sam@example.com",
     "bio": "I like classic mysteries.",
-    "favorite_genres": ["science-fiction", "mystery"]
+    "favorite_genres": [878, 9648]
   }
 }
 ```

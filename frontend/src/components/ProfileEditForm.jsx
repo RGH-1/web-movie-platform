@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { updateProfile } from '../services/profile';
 import {
-  GENRES, profileToForm, emailIsChanging, validateProfileForm, buildProfileUpdate,
+  GENRE_OPTIONS, profileToForm, emailIsChanging, validateProfileForm, buildProfileUpdate,
 } from '../utils/profileForm';
 
 function FieldErrors({ field, errors }) {
@@ -142,28 +142,46 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
           <FieldErrors field="bio" errors={errors} />
         </div>
 
-        <fieldset className="mb-4" aria-describedby="genres-help favorite_genres-errors">
+        <fieldset
+          className="mb-4"
+          aria-describedby={hasError('favorite_genres')
+            ? 'genres-help favorite_genres-errors'
+            : 'genres-help'}
+        >
           <legend className="fs-6">Favorite genres (optional)</legend>
           <p id="genres-help" className="form-text mt-0">
-            Choose up to five. Clear all selections to remove your preferences.
+            Choose up to five to personalize your recommendations.
+            Clear all selections to remove your preferences.
           </p>
+
           <div className="row g-2">
-            {Object.entries(GENRES).map(([slug, label]) => (
-              <div key={slug} className="col-12 col-sm-6">
+            {GENRE_OPTIONS.map(({ id, label }) => (
+              <div key={id} className="col-12 col-sm-6">
                 <div className="form-check">
-                  <input type="checkbox" className="form-check-input"
-                    id={'genre-' + slug}
-                    checked={form.favorite_genres.includes(slug)}
-                    disabled={!form.favorite_genres.includes(slug) && form.favorite_genres.length >= 5}
-                    onChange={(event) => change('favorite_genres', event.target.checked
-                      ? [...form.favorite_genres, slug]
-                      : form.favorite_genres.filter((genre) => genre !== slug))}
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    id={'genre-' + id}
+                    checked={form.favorite_genres.includes(id)}
+                    disabled={
+                      !form.favorite_genres.includes(id) &&
+                      form.favorite_genres.length >= 5
+                    }
+                    onChange={(event) => change(
+                      'favorite_genres',
+                      event.target.checked
+                        ? [...form.favorite_genres, id]
+                        : form.favorite_genres.filter((genre) => genre !== id),
+                    )}
                   />
-                  <label className="form-check-label" htmlFor={'genre-' + slug}>{label}</label>
+                  <label className="form-check-label" htmlFor={'genre-' + id}>
+                    {label}
+                  </label>
                 </div>
               </div>
             ))}
           </div>
+
           <FieldErrors field="favorite_genres" errors={errors} />
         </fieldset>
 

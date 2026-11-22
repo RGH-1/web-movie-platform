@@ -43,3 +43,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Review sentiment display and verification (AB#142)](frontend/review-sentiment.md)
 - [Movie-night storage and authorization (AB#120)](architecture/movie-nights.md)
 - [Movie-night management API (AB#121)](api/movie-nights-contract.md)
+- [Favorite genre preferences (AB#115)](frontend/favorite-genre-preferences.md)

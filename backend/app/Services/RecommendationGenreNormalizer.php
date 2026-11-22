@@ -2,30 +2,39 @@
 
 namespace App\Services;
 
+use App\Support\MovieGenres;
 use Illuminate\Support\Str;
 
 class RecommendationGenreNormalizer
 {
-    public const GENRES = [
-        'action' => 28, 'adventure' => 12, 'animation' => 16, 'comedy' => 35,
-        'crime' => 80, 'documentary' => 99, 'drama' => 18, 'fantasy' => 14,
-        'horror' => 27, 'mystery' => 9648, 'romance' => 10749,
-        'science-fiction' => 878, 'thriller' => 53,
-    ];
+    public const GENRES = MovieGenres::IDS_BY_SLUG;
 
     /** @param array<int, mixed> $genres @return list<string> */
     public function normalize(array $genres): array
     {
         $result = [];
+
         foreach ($genres as $genre) {
-            $slug = null;
-            if (is_array($genre)) {
+            $id = null;
+            $name = null;
+
+            if (is_int($genre)) {
+                $id = $genre;
+            } elseif (is_array($genre)) {
                 $id = $genre['tmdb_id'] ?? $genre['id'] ?? null;
-                $slug = is_int($id) ? array_search($id, self::GENRES, true) : null;
-                $slug ??= is_string($genre['name'] ?? null) ? $this->slug($genre['name']) : null;
+                $name = $genre['name'] ?? null;
             } elseif (is_string($genre)) {
-                $slug = $this->slug($genre);
+                $name = $genre;
             }
+
+            $slug = is_int($id)
+                ? MovieGenres::slugForId($id)
+                : null;
+
+            if ($slug === null && is_string($name)) {
+                $slug = $this->slug($name);
+            }
+
             if ($slug !== null && isset(self::GENRES[$slug])) {
                 $result[$slug] = true;
             }

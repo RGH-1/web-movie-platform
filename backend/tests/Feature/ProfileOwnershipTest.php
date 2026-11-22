@@ -17,19 +17,19 @@ class ProfileOwnershipTest extends TestCase
     public function test_query_parameters_cannot_redirect_an_update_to_another_account(): void
     {
         $owner = User::factory()->create();
-        $other = User::factory()->create(['bio' => 'Private bio', 'favorite_genres' => ['drama']]);
+        $other = User::factory()->create(['bio' => 'Private bio', 'favorite_genres' => [18]]);
         $originalOther = $other->fresh()->getRawOriginal();
 
         $this->actingAs($owner, 'web')->patchJson(
             self::PROFILE.'?id='.$other->id.'&user_id='.$other->id,
-            ['name' => 'Owner Updated', 'bio' => 'Owner bio', 'favorite_genres' => ['comedy']]
+            ['name' => 'Owner Updated', 'bio' => 'Owner bio', 'favorite_genres' => [35]]
         )->assertOk()
             ->assertJsonPath('data.id', $owner->id)
             ->assertJsonPath('data.name', 'Owner Updated')
             ->assertJsonPath('data.bio', 'Owner bio');
 
         $this->assertSame('Owner Updated', $owner->fresh()->name);
-        $this->assertSame(['comedy'], $owner->fresh()->favorite_genres);
+        $this->assertSame([35], $owner->fresh()->favorite_genres);
         $this->assertSame($originalOther, $other->fresh()->getRawOriginal());
     }
 
@@ -53,7 +53,7 @@ class ProfileOwnershipTest extends TestCase
 
     public function test_protected_and_unknown_fields_reject_the_entire_update_even_when_null(): void
     {
-        $owner = User::factory()->create(['bio' => 'Original bio', 'favorite_genres' => ['drama']]);
+        $owner = User::factory()->create(['bio' => 'Original bio', 'favorite_genres' => [18]]);
         $original = $owner->fresh()->getRawOriginal();
         $this->actingAs($owner, 'web');
 
@@ -75,7 +75,7 @@ class ProfileOwnershipTest extends TestCase
                 $this->patchJson(self::PROFILE, [
                     'name' => 'Not Saved',
                     'bio' => 'Not Saved',
-                    'favorite_genres' => ['comedy'],
+                    'favorite_genres' => [35],
                     $field => $submittedValue,
                 ])->assertUnprocessable()->assertJsonValidationErrors($field);
 
@@ -94,12 +94,12 @@ class ProfileOwnershipTest extends TestCase
             ['bio' => ['not text']],
             ['email' => null],
             ['name' => null],
-            ['favorite_genres' => 'drama'],
+            ['favorite_genres' => 18],
         ] as $invalid) {
             $this->patchJson(self::PROFILE, array_merge([
                 'name' => 'Not Saved',
                 'bio' => 'Not Saved',
-                'favorite_genres' => ['comedy'],
+                'favorite_genres' => [35],
             ], $invalid))->assertUnprocessable()
                 ->assertJsonValidationErrors(array_keys($invalid));
 

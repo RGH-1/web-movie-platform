@@ -71,6 +71,20 @@ Normalize supported genres using this fixed mapping:
 | romance | 10749 | Romance |
 | science-fiction | 878 | Science Fiction |
 | thriller | 53 | Thriller |
+| family | 10751 | Family |
+| history | 36 | History |
+| music | 10402 | Music |
+| tv-movie | 10770 | TV Movie |
+| war | 10752 | War |
+| western | 37 | Western |
+
+AB#115 stores explicit profile preferences as supported TMDB integer IDs.
+Normalize those IDs to the table's slugs before candidate selection and
+scoring. Catalog names and genre objects remain supported inputs.
+
+The scorer and explanation parameters continue using normalized slugs.
+The signal weights and weather formula are unchanged. Genres without a
+specific weather association use the existing neutral weather value.
 
 Prefer a recognized genre ID. For local metadata without an ID, accept a
 matching normalized supported name or slug.
