@@ -53,5 +53,31 @@ class AppServiceProvider extends ServiceProvider
 
             return Review::query()->findOrFail($id);
         });
+
+        Route::bind('movieNight', static function (string $value): MovieNight {
+            $id = filter_var(
+                $value,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]],
+            );
+
+            abort_if(
+                $id === false || (string) $id !== $value,
+                404,
+                'Movie night not found.',
+            );
+
+            $actor = request()->user();
+
+            abort_if($actor === null, 401, 'Unauthenticated.');
+
+            $night = MovieNight::query()
+                ->visibleTo($actor)
+                ->find($id);
+
+            abort_if($night === null, 404, 'Movie night not found.');
+
+            return $night;
+        });
     }
 }
