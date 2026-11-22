@@ -18,7 +18,7 @@ class AuthenticatedUserTest extends TestCase
     {
         $user = User::factory()->create([
             'bio' => 'I enjoy science fiction.',
-            'favorite_genres' => ['science-fiction'],
+            'favorite_genres' => [878],
         ]);
 
         $this->actingAs($user, 'web')
