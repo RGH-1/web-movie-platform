@@ -7,16 +7,17 @@ const providers = [
     { id: "facebook", name: "Facebook", Icon: FaFacebookF },
 ];
 
-function getOAuthUrl(provider) {
+function getOAuthUrl(provider, returnTo) {
     const apiBaseUrl =
         import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 
     const backendOrigin = new URL(apiBaseUrl).origin;
 
-    return `${backendOrigin}/auth/${provider}/redirect`;
+    const url = `${backendOrigin}/auth/${provider}/redirect`;
+    return returnTo ? `${url}?${new URLSearchParams({ return_to: returnTo })}` : url;
 }
 
-function SocialLoginButtons() {
+function SocialLoginButtons({ returnTo }) {
     return (
         <div className="mt-4">
             <div className="d-flex align-items-center gap-3 mb-3">
@@ -31,7 +32,7 @@ function SocialLoginButtons() {
                 {providers.map(({ id, name, Icon }) => (
                     <a
                         key={id}
-                        href={getOAuthUrl(id)}
+                        href={getOAuthUrl(id, returnTo)}
                         className="btn btn-outline-secondary w-100"
                     >
                         <span className="d-inline-flex align-items-center gap-2">
