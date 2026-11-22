@@ -108,6 +108,10 @@ class Movie extends Model
         return $query->whereNull('deactivated_at');
     }
 
+    public function winningMovieNights(): HasMany
+    {
+        return $this->hasMany(MovieNight::class, 'winning_movie_id');
+    }
 
 
     public function userStatuses(): HasMany

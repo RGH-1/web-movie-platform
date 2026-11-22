@@ -113,4 +113,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(SocialAccount::class);
     }
+
+    public function organizedMovieNights(): HasMany
+    {
+        return $this->hasMany(MovieNight::class, 'organizer_id');
+    }
 }
