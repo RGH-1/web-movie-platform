@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
         // Application features that also require a complete profile.
         Route::middleware('profile.complete')->group(function () {
             Route::get('/recommendations', [RecommendationController::class, 'index'])->middleware('throttle:recommendations');
+            Route::get('/recommendations/city', [RecommendationController::class, 'city'])->middleware('throttle:10,1,recommendation-city');
             Route::post('/lists', [MovieListController::class, 'store']);
             Route::patch('/lists/{listId}', [MovieListController::class, 'update']);
             Route::delete('/lists/{listId}', [MovieListController::class, 'destroy']);

@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use App\Support\MovieGenres;
 
 class UpdateProfileRequest extends FormRequest
 {
@@ -41,12 +42,11 @@ class UpdateProfileRequest extends FormRequest
             'share_activity' => ['sometimes', 'boolean'],
             'favorite_genres' => ['sometimes', 'array', 'list', 'max:5'],
             'favorite_genres.*' => [
-                'bail', 'required', 'string', 'distinct:strict',
-                Rule::in([
-                    'action', 'adventure', 'animation', 'comedy', 'crime',
-                    'documentary', 'drama', 'fantasy', 'horror', 'mystery',
-                    'romance', 'science-fiction', 'thriller',
-                ]),
+                'bail',
+                'required',
+                'integer:strict',
+                'distinct:strict',
+                Rule::in(MovieGenres::ids()),
             ],
         ];
 

@@ -30,6 +30,34 @@ class RecommendationApiTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_city_lookup_requires_authentication_and_valid_input(): void
+    {
+        Http::preventStrayRequests();
+        $this->getJson('/api/v1/recommendations/city?city=Beirut')->assertUnauthorized();
+        $this->actingAs(User::factory()->create(), 'web');
+        $this->getJson('/api/v1/recommendations/city')->assertUnprocessable()->assertJsonValidationErrors('city');
+        $this->getJson('/api/v1/recommendations/city?city[]=Beirut')->assertUnprocessable()->assertJsonValidationErrors('city');
+        $this->getJson('/api/v1/recommendations/city?city='.str_repeat('a', 121))->assertUnprocessable();
+        Http::assertNothingSent();
+    }
+
+    public function test_city_lookup_reuses_weather_geocoding_and_returns_null_on_failure(): void
+    {
+        Http::fake(['geocoding-api.open-meteo.com/*' => Http::sequence()
+            ->push(['results' => [
+                ['name' => 'Beirut', 'country' => 'Lebanon', 'latitude' => 33.8938, 'longitude' => 35.5018],
+            ]])
+            ->pushStatus(503)]);
+        $this->actingAs(User::factory()->create(), 'web');
+
+        $this->getJson('/api/v1/recommendations/city?city=Beirut%2C%20Lebanon')
+            ->assertOk()->assertHeader('Cache-Control', 'no-store, private')
+            ->assertExactJson(['data' => ['latitude' => 33.89, 'longitude' => 35.5]]);
+        $this->getJson('/api/v1/recommendations/city?city=Paris')
+            ->assertOk()->assertExactJson(['data' => null]);
+        Http::assertSentCount(2);
+    }
+
     public function test_watched_and_hidden_reviewed_movies_are_excluded_while_watchlist_only_is_eligible(): void
     {
         $user = User::factory()->create();
@@ -75,7 +103,7 @@ class RecommendationApiTest extends TestCase
     public function test_local_genre_and_quality_buckets_keep_older_high_value_movies_when_catalog_exceeds_two_hundred(): void
     {
         config(['services.tmdb.base_url' => null, 'services.tmdb.token' => null]);
-        $user = User::factory()->create(['favorite_genres' => ['mystery']]);
+        $user = User::factory()->create(['favorite_genres' => [9648]]);
         $genreMovie = Movie::factory()->create(['title' => 'Genre bucket', 'genres' => [['tmdb_id' => 9648, 'name' => 'Mystery']]]);
         $qualityMovie = Movie::factory()->tmdb(990001)->create(['title' => 'Quality bucket', 'vote_average' => 10]);
         Movie::factory()->count(205)->create();

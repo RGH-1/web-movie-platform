@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 
-function MovieCard({ movie }) {
+function MovieCard({ movie, children }) {
     const releaseYear = movie.release_date
         ? movie.release_date.slice(0, 4)
         : 'Unknown year';
@@ -51,6 +51,8 @@ function MovieCard({ movie }) {
                 <p className="card-text">
                     {movie.overview?.trim() || 'No overview available.'}
                 </p>
+
+                {children}
 
                 <div className="mt-auto pt-3">
                     {detailUrl ? (

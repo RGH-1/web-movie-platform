@@ -1,14 +1,21 @@
 # Weather service and location handling — AB#113
 
-`App\Services\WeatherService` is an internal Laravel dependency for the future weighted-v1 recommendation implementation. It has no public route and does not rank movies, persist locations, or change the current recommendation API contract.
+`App\Services\WeatherService` supplies weather and city geocoding to Laravel's weighted-v1 recommendations. It does not rank movies or store location on profiles.
 
 ## Inputs
 
 Call `current($latitude, $longitude, $city)` with either a coordinate pair or a city. Coordinates take precedence when present, must be finite numeric values, require both values, are bounded to latitude `-90..90` and longitude `-180..180`, and are rounded to two decimal places before cache and provider use. Missing location returns `not_requested`; invalid supplied coordinates or city are rejected at the service boundary.
 
-City support is reusable for a future caller. It uses Open-Meteo geocoding server-side with a nonempty city up to 120 characters. The service requests multiple candidates, matches the requested city name exactly (not as a prefix), and, when supplied after a comma, matches the country/admin qualifier against the provider result. It proceeds only when exactly one candidate matches; zero, malformed, ambiguous, duplicate, rate-limited, or failed responses return weather `unavailable`. For example, `Beirut, Lebanon` matches `Beirut` while excluding `Beirut Air Base`. It never substitutes a different location.
+The Recommendations page uses Laravel's city lookup. It uses Open-Meteo geocoding server-side with a nonempty city up to 120 characters. The service requests multiple candidates, matches the requested city name exactly (not as a prefix), and, when supplied after a comma, matches the country/admin qualifier against the provider result. It proceeds only when exactly one candidate matches; zero, malformed, ambiguous, duplicate, rate-limited, or failed responses return weather `unavailable`. For example, `Beirut, Lebanon` matches `Beirut` while excluding `Beirut Air Base`. It never substitutes a different location.
 
-AB#112's published `GET /api/v1/recommendations` contract continues to accept **coordinates only**. A recommendation controller may call `WeatherService::current($latitude, $longitude)` later. City support is intentionally not silently added to that shared public request contract.
+The signed-in `GET /api/v1/recommendations/city?city=Beirut%2C%20Lebanon`
+route requires a complete profile and allows ten requests per minute per user.
+Send `Accept: application/json` and the existing Sanctum session cookie. A missing,
+blank, or non-string city, or a city over 120 characters, returns 422. A resolved
+city returns `{"data":{"latitude":33.89,"longitude":35.50}}`. When a city cannot be
+resolved, the response is `{"data":null}`. The browser passes a valid coordinate
+pair to the existing `GET /api/v1/recommendations` route. Both responses use
+`Cache-Control: private, no-store`.
 
 ## Provider configuration
 
@@ -23,7 +30,7 @@ Only HTTPS URLs on Open-Meteo's trusted weather/geocoding hosts are accepted. No
 
 ## Output contract
 
-Every call returns only normalized weather—not the supplied or resolved location:
+The weather result contains only normalized weather fields:
 
 ```json
 {

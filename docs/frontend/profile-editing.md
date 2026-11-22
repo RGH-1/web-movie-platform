@@ -68,3 +68,17 @@ Use a test account and disable old browser response overrides.
     Do not share requests containing passwords.
 
 No backend or development database changes are made by this task.
+
+
+## Favorite genre IDs — AB#115
+
+Favorite genre checkbox values and profile API arrays use supported TMDB
+movie genre integer IDs. Labels remain human-readable and alphabetically
+ordered. The maximum remains five selections.
+
+The response parser accepts integer arrays. Existing string preferences
+must be converted by the AB#115 data migration before using the updated
+frontend.
+
+See [Favorite genre preferences](favorite-genre-preferences.md) for the
+complete behavior and verification record.

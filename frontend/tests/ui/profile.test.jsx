@@ -48,7 +48,7 @@ function HomeProbe() {
       <h1>Test home</h1>
       <p>{user?.name ?? 'Guest'}</p>
       <ProfileCompletionNotice completion={profileCompletion} />
-      <button type="button" onClick={() => api.get('/v1/movies/search').catch(() => {})}>
+      <button type="button" onClick={() => api.get('/v1/movies/search').catch(() => { })}>
         Request restricted feature
       </button>
     </main>
@@ -209,7 +209,7 @@ describe('profile editing and errors', () => {
     expect(screen.getByText('Updated Sam')).toBeInTheDocument();
     expect(screen.getByText('Movie fan')).toBeInTheDocument();
     expect(patches).toEqual([{
-      name: 'Updated Sam', bio: 'Movie fan', favorite_genres: ['drama'],
+      name: 'Updated Sam', bio: 'Movie fan', favorite_genres: [18],
     }]);
     const csrfIndex = requests.findIndex((request) => request.url.endsWith('/sanctum/csrf-cookie'));
     const patchIndex = requests.findIndex((request) => request.method === 'patch');
@@ -251,10 +251,12 @@ describe('profile editing and errors', () => {
     const user = userEvent.setup();
     const normal = respond;
     respond = async (config) => config.method === 'patch'
-      ? response(config, 422, { errors: {
-        email: ['The email has already been taken.'],
-        'favorite_genres.0': ['This genre is not supported.'],
-      } }) : normal(config);
+      ? response(config, 422, {
+        errors: {
+          email: ['The email has already been taken.'],
+          'favorite_genres.0': ['This genre is not supported.'],
+        }
+      }) : normal(config);
     openProfile();
     await openEditor(user);
     await user.clear(screen.getByLabelText('Email'));
@@ -281,11 +283,13 @@ describe('profile editing and errors', () => {
     openProfile();
     await openEditor(user);
     await user.type(screen.getByLabelText('Bio (optional)'), 'Retain me');
+    await user.click(screen.getByLabelText('Family'));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       failure === 419 ? 'security session expired' : 'couldn’t confirm',
     );
     expect(screen.getByLabelText('Bio (optional)')).toHaveValue('Retain me');
+    expect(screen.getByLabelText('Family')).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
     expect(screen.queryByText('Your profile was saved.')).not.toBeInTheDocument();
   });
@@ -371,4 +375,52 @@ describe('completion guidance', () => {
     expect(screen.getByText('No bio added yet.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Complete your profile' })).not.toBeInTheDocument();
   });
+});
+
+it('saves numeric genres, reloads selections, enforces five choices, and clears them', async () => {
+  const user = userEvent.setup();
+  savedProfile.favorite_genres = [878];
+
+  const view = openProfile();
+  await openEditor(user);
+
+  expect(screen.getByLabelText('Science Fiction')).toBeChecked();
+
+  for (const label of ['Family', 'Music', 'History', 'War']) {
+    await user.click(screen.getByLabelText(label));
+  }
+
+  expect(screen.getByLabelText('TV Movie')).toBeDisabled();
+
+  await user.click(screen.getByLabelText('Music'));
+  expect(screen.getByLabelText('TV Movie')).toBeEnabled();
+  await user.click(screen.getByLabelText('TV Movie'));
+
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await screen.findByText('Your profile was saved.');
+
+  expect(patches[0].favorite_genres).toEqual([
+    878, 10751, 36, 10752, 10770,
+  ]);
+
+  expect(screen.getByText('Family')).toBeInTheDocument();
+  expect(screen.getByText('Science Fiction')).toBeInTheDocument();
+
+  view.unmount();
+  openProfile();
+  await openEditor(user);
+
+  for (const label of ['Science Fiction', 'Family', 'History', 'War', 'TV Movie']) {
+    expect(screen.getByLabelText(label)).toBeChecked();
+    await user.click(screen.getByLabelText(label));
+  }
+
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await screen.findByText('Your profile was saved.');
+
+  expect(patches.at(-1).favorite_genres).toEqual([]);
+  expect(screen.getByText('No favorite genres selected yet.')).toBeInTheDocument();
+
+  await openEditor(user);
+  expect(screen.getByLabelText('Family')).not.toBeChecked();
 });
