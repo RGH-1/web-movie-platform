@@ -12,6 +12,8 @@ erDiagram
     USERS ||--o{ MOVIE_LISTS : owns
     USERS ||--o{ MOVIE_NIGHTS : organizes
     MOVIES |o--o{ MOVIE_NIGHTS : wins
+    USERS ||--o{ MOVIE_NIGHT_PARTICIPANTS : participates
+    MOVIE_NIGHTS ||--o{ MOVIE_NIGHT_PARTICIPANTS : grants_access
 
     USERS |o--o{ REVIEWS : moderates
     MOVIE_LISTS ||--o{ MOVIE_LIST_ITEMS : contains
@@ -95,6 +97,12 @@ erDiagram
         bigint id PK
         bigint media_asset_id FK
     }
+    MOVIE_NIGHT_PARTICIPANTS {
+        bigint movie_night_id PK, FK
+        bigint user_id PK, FK
+        timestamp created_at
+        timestamp updated_at
+    }
 ```
 
 `movie_list_items` uses the `(movie_list_id, movie_id)` pair to prevent duplicate membership.
@@ -108,3 +116,9 @@ Movie-night organizers and winning movies use restricted deletion.
 
 See [movie-night storage and authorization](movie-nights.md) for lifecycle,
 time handling, permissions, and the future vote/message write boundary.
+
+
+AB#121 adds trusted participant membership, unique by
+`(movie_night_id, user_id)`. Deleting a night or participant removes its
+membership rows. Membership grants read access to non-draft nights; it
+does not itself implement invitations, voting, or chat.

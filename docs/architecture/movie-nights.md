@@ -5,8 +5,11 @@
 This task introduces movie-night storage, relationships, lifecycle rules,
 ownership policies, and a transactional write guard.
 
-It does not introduce HTTP endpoints, invitation membership, shortlist
-storage, votes, messages, or a frontend.
+AB#121 adds the authenticated management API and trusted participant
+membership. Invitation delivery, shortlist storage, votes, messages, and
+frontend flows remain separate work.
+
+See the [management API contract](../api/movie-nights-contract.md).
 
 ## Schema
 
@@ -78,8 +81,9 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-Normal application creation starts in draft. Trusted factories may construct
-other valid states directly for fixtures.
+The management API defaults to draft and also accepts an explicitly validated
+scheduled state on creation. Trusted factories may construct other valid
+states directly for fixtures.
 
 - Draft and scheduled nights cannot hold a winning movie.
 - Finalized nights require a winning movie.
@@ -112,9 +116,11 @@ There are no exceptions allowing new votes/messages on cancelled nights.
 
 Reading history is separate from permission to create new activity.
 
-Until invitations exist, only the organizer has view/vote/message access.
-Later membership support must use actual authorized participation records
-and retain the status restrictions.
+AB#121 permits trusted participants to read scheduled, finalized, and
+cancelled nights. Drafts remain organizer-only.
+
+Vote and message permissions remain organizer-only until their respective
+features extend participation authorization.
 
 ## Application write boundary
 
@@ -152,8 +158,11 @@ middleware, dedicated Form Requests, or safe API resources.
 - MovieNight::winningMovie() -> Movie
 - User::organizedMovieNights() -> MovieNight collection
 - Movie::winningMovieNights() -> MovieNight collection
+- MovieNight::participants() <-> User::participatingMovieNights()
 
-No placeholder invitation, vote, or message relationships are defined.
+MovieNight::participants() and User::participatingMovieNights() use
+movie_night_participants. Invitation, vote, and message relationships remain
+unimplemented.
 
 ## Verification
 
