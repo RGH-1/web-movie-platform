@@ -46,3 +46,21 @@ php artisan test --filter=RecommendationScorerTest
 php artisan test --filter=RecommendationApiTest
 php artisan test
 ```
+
+
+## Favorite genre preferences — AB#115
+
+The service reads the authenticated user's persisted favorite_genres.
+Profile GET/PATCH uses supported TMDB integer IDs, such as [878, 9648].
+
+RecommendationGenreNormalizer converts these to internal slugs using
+App\Support\MovieGenres. Existing candidate selection, genre scoring,
+provider genre discovery, and genre_preference explanations reuse that
+normalized context.
+
+Profile preference updates require no provider requests. Personalized
+recommendation responses are not cached, so subsequent requests use the
+updated preferences. Shared provider caches remain unchanged.
+
+FavoriteGenrePreferencesTest verifies profile persistence and a reversal
+of final ranking after changing saved preferences.
