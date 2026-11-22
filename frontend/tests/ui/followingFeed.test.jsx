@@ -37,6 +37,9 @@ it('renders the API feed in order and loads the next page', async () => {
   openFeed();
   await screen.findByText('Weekend picks');
   const rows = screen.getAllByRole('listitem');
+  expect(screen.getByRole('heading', { name: 'Public list' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Written review' })).toBeInTheDocument();
+  expect(screen.getAllByRole('link', { name: 'Morgan' })[0]).toHaveAttribute('href', '/users/7');
   expect(rows[0]).toHaveTextContent('Morgan published Weekend picks');
   expect(rows[1]).toHaveTextContent('Morgan reviewed Moonlight (5/5)');
   expect(screen.getByRole('link', { name: 'Weekend picks' })).toHaveAttribute('href', '/lists/list-1');
@@ -44,6 +47,8 @@ it('renders the API feed in order and loads the next page', async () => {
 
   await userEvent.click(screen.getByRole('button', { name: 'Next' }));
   await screen.findByText('Arrival');
+  expect(screen.getByRole('heading', { name: 'Rating' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Arrival' })).toHaveAttribute('href', '/movies/local/movie-2');
   expect(screen.getByRole('listitem')).toHaveTextContent('Morgan rated Arrival (4/5)');
   expect(screen.queryByText('Weekend picks')).toBeNull();
   expect(api.get.mock.calls).toEqual([
@@ -51,6 +56,19 @@ it('renders the API feed in order and loads the next page', async () => {
     ['/v1/feed', { params: { page: 2 }, signal: expect.any(AbortSignal) }],
   ]);
   expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+});
+
+it('shows loading and a retryable error before an empty result', async () => {
+  api.get.mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({ data: {
+    data: [],
+    meta: { current_page: 1, last_page: 1, per_page: 12, total: 0 },
+  } });
+
+  openFeed();
+  expect(screen.getByRole('status')).toHaveTextContent('Loading activity');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the following feed.');
+  await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByText('No activity on this page.')).toBeInTheDocument();
 });
 
 it('redirects anonymous users before requesting any feed activity', async () => {
