@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountIsEnabled;
 use App\Http\Middleware\EnsureProfileIsComplete;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,7 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $middleware->alias([
             'profile.complete' => EnsureProfileIsComplete::class,
+            'account.enabled' => EnsureAccountIsEnabled::class,
         ]);
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureAccountIsEnabled::class);
         $middleware->trimStrings(except: ['current_password']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminMovieController;
 use App\Http\Controllers\AdminReviewController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\CatalogMovieController;
 use App\Http\Controllers\FollowController;
@@ -55,7 +56,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/users/{userId}/following', [FollowController::class, 'following']);
 
     // Routes available to any authenticated account.
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.enabled'])->group(function () {
         Route::get('/feed', FollowingFeedController::class);
 
         Route::post('/users/{userId}/follow', [FollowController::class, 'store']);
@@ -79,6 +80,8 @@ Route::prefix('v1')->group(function () {
             Route::patch('/movies/{movieId}', [AdminMovieController::class, 'update']);
             Route::delete('/movies/{movieId}', [AdminMovieController::class, 'destroy']);
             Route::get('/dashboard', AdminDashboardController::class);
+            Route::get('/users', [AdminUserController::class, 'index']);
+            Route::patch('/users/{userId}/status', [AdminUserController::class, 'update']);
             Route::get('/reviews', [AdminReviewController::class, 'index']);
             Route::patch('/reviews/{review}/moderation', [AdminReviewController::class, 'update']);
         });

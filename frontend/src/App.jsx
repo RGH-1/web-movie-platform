@@ -18,6 +18,7 @@ import ListDetailsPage from "./pages/ListDetailsPage";
 import PublicListsPage from "./pages/PublicListsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import FollowingFeedPage from "./pages/FollowingFeedPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 import MyMovieNightsPage from "./pages/MyMovieNightsPage";
 import MovieNightDetailsPage from "./pages/MovieNightDetailsPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
@@ -30,7 +31,7 @@ import "./App.css";
 // Development homepage
 function Home() {
     const location = useLocation();
-    const { isAuthenticated, profileCompletion } = useAuth();
+    const { user, isAuthenticated, profileCompletion } = useAuth();
 
     const successMessage =
         location.state?.registrationSuccess || location.state?.loginSuccess;
@@ -75,6 +76,9 @@ function Home() {
                         <Link to="/movie-nights" className="btn btn-outline-primary">
                             My Movie Nights
                         </Link>
+                        {user?.can_access_admin === true && (
+                            <Link to="/admin/users" className="btn btn-outline-primary">User management</Link>
+                        )}
                     </>
                 )}
             </div>
@@ -101,6 +105,7 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/feed" element={<FollowingFeedPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/account/password" element={<PasswordPage mode="change" />} />

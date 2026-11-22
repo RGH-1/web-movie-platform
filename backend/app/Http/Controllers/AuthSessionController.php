@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class AuthSessionController extends Controller
 
         $guard = Auth::guard('web');
 
-        if (! $guard->attempt($request->validated())) {
+        if (! $guard->attemptWhen($request->validated(), static fn (User $user): bool => $user->disabled_at === null)) {
             return response()->json(['message' => 'Invalid email or password.'], 401);
         }
 
@@ -31,6 +32,7 @@ class AuthSessionController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'can_access_admin' => $user->can('access-admin'),
             ],
         ]);
     }
