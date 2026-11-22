@@ -118,4 +118,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(MovieNight::class, 'organizer_id');
     }
+
+    public function participatingMovieNights(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MovieNight::class,
+            'movie_night_participants',
+            'user_id',
+            'movie_night_id',
+        )->withTimestamps();
+    }
 }
