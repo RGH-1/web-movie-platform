@@ -22,6 +22,7 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Custom movie lists API (AB#91)](api/movie-lists-contract.md)
 - [My Lists management and testing (AB#92)](frontend/my-lists.md)
 - [Public movie lists (AB#109)](frontend/public-movie-lists.md)
+- [Following feed (AB#105)](frontend/following-feed.md)
 - [Movie review and moderation verification (AB#65)](frontend/movie-review-testing.md)
 - [List details and Add to List (AB#93)](frontend/list-details.md)
 - [List management and visibility verification (AB#94)](frontend/list-management-testing.md)
