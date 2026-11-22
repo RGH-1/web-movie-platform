@@ -1,12 +1,17 @@
 # Movie catalog ERD — AB#69
 
-This diagram describes the target relationships. `users` already exists. Catalog, review, and movie-list tables are implemented. Other social and playback tables belong to their respective work items. Movie-list names follow AB#90.
+This diagram combines implemented catalog, review, movie-list, user-status,
+and movie-night relationships with planned media/playback relationships.
+Movie-night storage is introduced by AB#120. Invitation, voting, and chat
+tables belong to their respective work items.
 
 ```mermaid
 erDiagram
     USERS ||--o{ REVIEWS : writes
     USERS ||--o{ USER_MOVIE_STATUSES : saves
     USERS ||--o{ MOVIE_LISTS : owns
+    USERS ||--o{ MOVIE_NIGHTS : organizes
+    MOVIES |o--o{ MOVIE_NIGHTS : wins
 
     USERS |o--o{ REVIEWS : moderates
     MOVIE_LISTS ||--o{ MOVIE_LIST_ITEMS : contains
@@ -64,6 +69,20 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    MOVIE_NIGHTS {
+        bigint id PK
+        bigint organizer_id FK
+        string title
+        text description "Nullable"
+        datetime starts_at "UTC"
+        string timezone
+        string location "Nullable"
+        text meeting_url "Nullable"
+        string status "Default draft"
+        bigint winning_movie_id FK "Nullable"
+        timestamp created_at
+        timestamp updated_at
+    }
     MOVIE_MEDIA_ASSETS {
         bigint id PK
         bigint movie_id FK
@@ -83,3 +102,9 @@ User movie statuses are unique by `(user_id, movie_id)`. Each record independent
 All `movie_id` columns shown above are required and restrict deletion of the referenced movie. The playback session’s asset reference also restricts deletion. See the [catalog architecture](movie-catalog.md) for the full movie column definitions and lifecycle rules.
 Reviews are unique by `(user_id, movie_id)`.
 AB#90: deleting an owner cascades to their movie lists and items; deleting a list cascades to its items. Catalog movies are preserved. Logging out does not delete any of these records.
+
+Movie-night organizers and winning movies use restricted deletion.
+`winning_movie_id` is nullable and references canonical `movies.id`.
+
+See [movie-night storage and authorization](movie-nights.md) for lifecycle,
+time handling, permissions, and the future vote/message write boundary.

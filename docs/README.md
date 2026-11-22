@@ -39,3 +39,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Recommendation service implementation (AB#114)](api/recommendation-service.md)
 - [Recommendation acceptance cases (AB#112)](testing/recommendation-design-cases.md)
 - [Review sentiment display and verification (AB#142)](frontend/review-sentiment.md)
+- [Movie-night storage and authorization (AB#120)](architecture/movie-nights.md)
