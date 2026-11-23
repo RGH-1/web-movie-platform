@@ -34,6 +34,7 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Weather service integration (AB#113)](api/weather-service-integration.md)
 - [Administrator movie catalog API (AB#154)](api/admin-movie-catalog-contract.md)
 - [Administrator movie catalog frontend handoff (AB#154/155)](api/admin-movie-catalog-frontend-handoff.md)
+- [Movie management interface (AB#155)](frontend/admin-movie-management.md)
 - [Administrator dashboard API (AB#150)](api/admin-dashboard-contract.md)
 - [AB#150 isolated MySQL stress test](testing/ab150-stress-test-report.md)
 - [Recommendation algorithm (AB#112)](architecture/recommendation-algorithm.md)
