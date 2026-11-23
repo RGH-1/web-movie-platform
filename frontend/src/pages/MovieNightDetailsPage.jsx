@@ -4,8 +4,9 @@ import MovieNightError from '../components/MovieNightError';
 import MovieNightForm from '../components/MovieNightForm';
 import { cancelMovieNight, getMovieNight } from '../services/movieNights';
 import { formatMovieNightStart, meetingLink, movieNightStatus } from '../utils/movieNights';
+import { MovieNightCalendarAction } from '../components/CalendarActions';
 
-const tools = ['Invitations', 'Shortlist and voting', 'Calendar export', 'Watch room'];
+const tools = ['Invitations', 'Shortlist and voting', 'Watch room'];
 
 export default function MovieNightDetailsPage() {
     const { nightId } = useParams();
@@ -20,6 +21,7 @@ function MovieNightDetails({ nightId }) {
     const [cancelError, setCancelError] = useState(null);
     const [mode, setMode] = useState(null);
     const [cancelling, setCancelling] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [notice, setNotice] = useState(state?.movieNightCreated ? 'Movie night created.' : '');
     const mutation = useRef(null);
 
@@ -35,8 +37,16 @@ function MovieNightDetails({ nightId }) {
 
     useEffect(() => () => mutation.current?.abort(), []);
 
+    function handleCalendarAccessError(error) {
+        setNight(null);
+        setMode(null);
+        setCancelError(null);
+        setNotice('');
+        setReadError(error);
+    }
+
     async function confirmCancellation() {
-        if (mutation.current || !night.permissions.cancel) return;
+        if (mutation.current || exporting || !night.permissions.cancel) return;
         const controller = new AbortController();
         mutation.current = controller;
         setCancelling(true);
@@ -66,10 +76,35 @@ function MovieNightDetails({ nightId }) {
                 <h1 className="h2 text-break mb-0">{night?.title ?? 'Movie night details'}</h1>
                 {night && !mode && (
                     <div className="d-flex flex-wrap gap-2">
-                        {night.permissions.update && <button type="button" className="btn btn-outline-primary"
-                            onClick={() => { setNotice(''); setMode('edit'); }}>Edit movie night</button>}
-                        {night.permissions.cancel && <button type="button" className="btn btn-outline-danger"
-                            onClick={() => { setNotice(''); setMode('cancel'); }}>Cancel movie night</button>}
+                        {night.permissions.update && (
+                            <button
+                                type="button"
+                                className="btn btn-outline-primary"
+                                disabled={exporting}
+                                onClick={() => {
+                                    if (exporting) return;
+                                    setNotice('');
+                                    setMode('edit');
+                                }}
+                            >
+                                Edit movie night
+                            </button>
+                        )}
+
+                        {night.permissions.cancel && (
+                            <button
+                                type="button"
+                                className="btn btn-outline-danger"
+                                disabled={exporting}
+                                onClick={() => {
+                                    if (exporting) return;
+                                    setNotice('');
+                                    setMode('cancel');
+                                }}
+                            >
+                                Cancel movie night
+                            </button>
+                        )}
                     </div>
                 )}
             </header>
@@ -124,10 +159,43 @@ function MovieNightDetails({ nightId }) {
                         </section>
                         <aside className="col-12 col-lg-4" aria-labelledby="night-tools">
                             <h2 id="night-tools" className="h4">Movie night tools</h2>
+
+                            <section
+                                className="card mb-3"
+                                aria-labelledby="night-calendar-title"
+                            >
+                                <div className="card-body">
+                                    <h3 id="night-calendar-title" className="h5">
+                                        Calendar export
+                                    </h3>
+
+                                    <MovieNightCalendarAction
+                                        night={night}
+                                        disabled={mode !== null || cancelling}
+                                        onBusyChange={setExporting}
+                                        onRefresh={(updated) => {
+                                            setNight(updated);
+                                            setNotice('');
+                                        }}
+                                        onAccessError={handleCalendarAccessError}
+                                    />
+
+                                    <p className="small text-body-secondary mb-0">
+                                        Calendar downloads are snapshots. Export again after
+                                        schedule changes, and remove cancelled events from
+                                        your calendar.
+                                    </p>
+                                </div>
+                            </section>
+
                             <ul className="list-group">
                                 {tools.map((tool) => (
-                                    <li key={tool} className="list-group-item d-flex flex-wrap justify-content-between gap-2">
-                                        {tool} <span className="text-body-secondary">Unavailable</span>
+                                    <li
+                                        key={tool}
+                                        className="list-group-item d-flex flex-wrap justify-content-between gap-2"
+                                    >
+                                        {tool}
+                                        <span className="text-body-secondary">Unavailable</span>
                                     </li>
                                 ))}
                             </ul>
