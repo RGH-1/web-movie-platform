@@ -147,7 +147,7 @@ it('shows participant details without organizer controls, and gives unavailable 
         .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add movie night to calendar' }))
         .toBeEnabled();
-    expect(screen.getAllByText('Unavailable')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Open watch room' })).toHaveAttribute('href', `${detailsPath}/watch-room`);
     expect(screen.queryByRole('button', { name: 'Edit movie night' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel movie night' })).not.toBeInTheDocument();
 });

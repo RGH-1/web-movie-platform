@@ -190,6 +190,28 @@ the user's normal My Movie Nights list.
 
 ## Representation
 
+## Watch room video assets (AB#130)
+
+Video assets are licensed/self-created demo MP4 files stored on Laravel's private
+`local` disk (for example `storage/app/private/video-assets/demo.mp4`), never in
+the public web root. No demo media file is bundled: create a `video_assets`
+record with the private relative path and duration before using the Watch Room.
+
+- `GET /api/v1/movie-nights/{id}/video-assets` lists safe asset metadata for an
+  eligible organizer.
+- `PUT /api/v1/movie-nights/{id}/video` accepts `{ "video_asset_id": "…" }`.
+  A finalized night with a winner is required; the organizer explicitly chooses
+  a clip and no catalog movie is mapped automatically.
+- `GET /api/v1/movie-nights/{id}/video` returns selected metadata and a protected
+  stream URL without disclosing filesystem paths.
+- `GET /api/v1/movie-nights/{id}/video/stream` is cookie-authenticated and
+  supports HTTP byte ranges for native HTML5 seeking.
+
+Existing movie-night visibility authorizes organizers and accepted participants;
+guests, declined invitees, and unrelated users are denied. Playback remains
+entirely independent per browser, with no localStorage, synchronization, or
+WebSockets. Missing selected files return 404.
+
 Every single-record response has a data object containing:
 
 - id: movie-night ID as a decimal string.

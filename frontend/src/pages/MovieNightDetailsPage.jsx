@@ -204,7 +204,7 @@ function MovieNightDetails({ nightId }) {
                             {tool === 'invitations' && <MovieNightInvitations nightId={night.id} organizer={{ ...night.organizer, viewer_role: night.viewer_role }}
                                 status={night.status} onAccepted={() => setAttempt((value) => value + 1)} />}
                             {tool === 'shortlist' && <MovieNightShortlist night={night} onFinalized={() => setAttempt((value) => value + 1)} />}
-                            <div className="list-group"><div className="list-group-item d-flex justify-content-between gap-2">Watch room <span className="text-body-secondary">Unavailable</span></div></div>
+                            <div className="list-group"><div className="list-group-item d-flex flex-wrap justify-content-between gap-2">Watch room <Link className="btn btn-sm btn-outline-primary" to={`/movie-nights/${night.id}/watch-room`}>Open watch room</Link></div></div>
                         </aside>
                     </div>
                 </>

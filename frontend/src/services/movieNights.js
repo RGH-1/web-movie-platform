@@ -64,6 +64,20 @@ export function finalizeMovieNight(id, candidateId, { signal } = {}) {
     return writeMovieNight('post', `${endpoint}/${encodeURIComponent(id)}/finalize`, data, signal);
 }
 
+export async function getMovieNightVideo(id, { signal } = {}) {
+    const response = await api.get(`${endpoint}/${encodeURIComponent(id)}/video`, { signal });
+    return response.data.data;
+}
+
+export async function getMovieNightVideoAssets(id, { signal } = {}) {
+    const response = await api.get(`${endpoint}/${encodeURIComponent(id)}/video-assets`, { signal });
+    return response.data.data;
+}
+
+export function assignMovieNightVideo(id, videoAssetId, { signal } = {}) {
+    return writeMovieNight('put', `${endpoint}/${encodeURIComponent(id)}/video`, { video_asset_id: String(videoAssetId) }, signal);
+}
+
 export async function searchCatalogMovies(search, page = 1, { signal } = {}) {
     const response = await api.get('/v1/catalog/movies', { params: { search, page }, signal });
     return response.data;
