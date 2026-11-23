@@ -42,6 +42,23 @@ class MovieNightPolicy
             && $night->acceptsVotes();
     }
 
+    public function invite(User $user, MovieNight $night): bool
+    {
+        return $this->organizes($user, $night)
+            && $night->status !== MovieNight::STATUS_CANCELLED;
+    }
+
+    public function respondToInvitation(User $user, MovieNight $night): bool
+    {
+        return ! in_array($night->status, [MovieNight::STATUS_DRAFT, MovieNight::STATUS_CANCELLED], true)
+            && $night->invitations()->where('invitee_id', $user->getKey())->exists();
+    }
+
+    public function viewAllInvitations(User $user, MovieNight $night): bool
+    {
+        return $this->organizes($user, $night);
+    }
+
     public function sendMessage(User $user, MovieNight $night): bool
     {
         return $this->organizes($user, $night)

@@ -30,6 +30,7 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Password management UI and testing (AB#77)](frontend/password-management.md)
 - [Social login and account security verification (AB#84)](frontend/social-login-testing.md)
 - [Administrator review moderation API (AB#147)](api/admin-review-moderation-contract.md)
+- [Review moderation interface (AB#148)](frontend/admin-review-moderation.md)
 - [Administrator user management (AB#152)](frontend/admin-user-management.md)
 - [Weather service integration (AB#113)](api/weather-service-integration.md)
 - [Administrator movie catalog API (AB#154)](api/admin-movie-catalog-contract.md)
@@ -47,3 +48,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Movie-night management API (AB#121)](api/movie-nights-contract.md)
 - [My Movie Nights planner (AB#122)](frontend/movie-nights.md)
 - [Favorite genre preferences (AB#115)](frontend/favorite-genre-preferences.md)
+- [Calendar export and frontend actions (AB#144)](frontend/calendar-export.md)

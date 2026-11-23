@@ -14,6 +14,9 @@ All endpoints require authentication and a complete profile.
 | GET | /api/v1/movie-nights/{id} | Read authorized details |
 | PATCH | /api/v1/movie-nights/{id} | Organizer update/scheduling |
 | POST | /api/v1/movie-nights/{id}/cancel | Organizer cancellation |
+| POST | /api/v1/movie-nights/{id}/invitations | Organizer invites a user |
+| GET | /api/v1/movie-nights/{id}/invitations | Read invitations grouped by status |
+| PATCH | /api/v1/movie-nights/{id}/rsvp | Invitee responds to their own invitation |
 
 Cancellation retains the night and its history.
 
@@ -33,8 +36,9 @@ endpoint is introduced here.
 
 The organizer is implicit and should not be inserted as an additional member.
 
-Future invitation acceptance must create/reuse this membership. Pending,
-declined, or revoked invitations must not grant access.
+Accepting an invitation creates or reuses this membership. Changing an accepted
+RSVP to declined removes the membership. Invitations in pending or declined
+status do not grant access to event details.
 
 Revoking membership removes participant read access.
 
@@ -115,6 +119,26 @@ A repeated cancellation returns 403 under the existing V1 policy.
 Cancellation preserves any existing winning movie.
 Cancelled nights remain protected from edits and new vote/message writes.
 
+## Invitations and RSVP (AB#124)
+
+- POST accepts a body with `invitee_id` set to an existing user ID and returns
+  201 with a pending invitation in `data`. Duplicate invitations and
+  self-invitations return 422.
+- GET returns `data.pending`, `data.accepted`, and `data.declined` arrays.
+  The organizer sees every invitation. Invitees see only their own
+  invitation. Callers without an invitation or organizer access receive 404.
+- PATCH accepts a body with `status` set to `accepted` or `declined` and
+  returns 200 with the updated invitation in `data`. The authenticated
+  invitee can repeat or change their response. Invalid statuses and extra body
+  fields return 422.
+- Organizers can prepare invitations while the night is a draft. Invitees can
+  see and respond to invitations once the event is scheduled. Cancellation
+  preserves invitation history for the organizer and each invitee and blocks
+  new invitations and RSVP changes with 403 for callers with access.
+- Invitation records expose string `id`, `movie_night_id`, and `inviter_id`,
+  the invitee's string `id` and `name`, `status`, and ISO timestamps
+  `created_at` and `updated_at`.
+
 ## Representation
 
 Every single-record response has a data object containing:
@@ -131,7 +155,7 @@ Every single-record response has a data object containing:
 - viewer_role: organizer or participant.
 - permissions.update and permissions.cancel.
 - summaries.participants.count: explicit membership-row count.
-- summaries.invitations: null while invitation summaries are unavailable.
+- summaries.invitations: null. Read invitation records from the invitations endpoint.
 - summaries.shortlist: null while shortlist summaries are unavailable.
 - created_at and updated_at: UTC ISO timestamps.
 
@@ -141,8 +165,8 @@ Example time conversion:
 
 Storage has second precision. Timezone changes alone do not move the instant.
 
-Null invitation/shortlist summaries mean unavailable functionality, not an
-empty invitation list or empty shortlist.
+Null invitation/shortlist summaries mean the movie-night representation omits
+those summaries.
 
 All successful responses use Cache-Control: private, no-store.
 
@@ -165,7 +189,7 @@ updates and cancellation.
 - Do not use a TMDB ID as a movie-night or canonical winning-movie ID.
 - Treat meeting/location/description values as plain data.
 - The server does not fetch meeting URLs.
-- Future invitation, shortlist, vote, and chat features must reuse the
+- Future shortlist, vote, and chat features must reuse the
   established visibility and write boundaries.
 - Vote/message permissions are not broadened by this read-access task.
 
@@ -194,3 +218,13 @@ Existing coverage reused:
 | ISO timestamps and validation | Pass |
 
 Record actual results and the tested commit before closing AB#121.
+
+## Calendar export consumer — AB#144
+
+The existing React planner refetches authorized details before generating
+a calendar file. Current scheduling, status, and visibility rules apply.
+
+Files are generated in the browser. No calendar API endpoint or public
+event URL is introduced.
+
+See [Calendar export](../frontend/calendar-export.md).

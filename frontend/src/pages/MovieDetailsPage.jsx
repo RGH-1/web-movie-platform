@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ReleaseCalendarAction } from "../components/CalendarActions";
 
 function MovieImage({ src, alt, placeholder, aspectRatio }) {
   const [failed, setFailed] = useState(false);
@@ -81,6 +82,7 @@ export default function MovieDetailsPage({ movie, children }) {
             </dd>
           </dl>
 
+          <ReleaseCalendarAction movie={movie} />
           <h2 className="h5 mb-2">Genres</h2>
           {genres.length ? (
             <ul className="list-unstyled d-flex flex-wrap gap-2 mb-4">

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MovieNight;
+use App\Models\MovieNightInvitation;
 use App\Models\User;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -102,6 +103,45 @@ class MovieNightAccessService
         Closure $write,
     ): mixed {
         return $this->withPermission($actor, $night, 'vote', $write);
+    }
+
+    public function invite(User $actor, MovieNight $night, int $inviteeId): MovieNightInvitation
+    {
+        return $this->withPermission($actor, $night, 'invite', function (MovieNight $current) use ($actor, $inviteeId): MovieNightInvitation {
+            if ($inviteeId === (int) $actor->getKey()) {
+                throw ValidationException::withMessages(['invitee_id' => 'The organizer is already part of this movie night.']);
+            }
+
+            if ($current->invitations()->where('invitee_id', $inviteeId)->exists()) {
+                throw ValidationException::withMessages(['invitee_id' => 'This user has already been invited.']);
+            }
+
+            $invitation = new MovieNightInvitation;
+            $invitation->invitee_id = $inviteeId;
+            $invitation->inviter()->associate($actor);
+            $current->invitations()->save($invitation);
+
+            return $invitation;
+        });
+    }
+
+    public function respondToInvitation(User $actor, MovieNight $night, string $status): MovieNightInvitation
+    {
+        return $this->withPermission($actor, $night, 'respondToInvitation', function (MovieNight $current) use ($actor, $status): MovieNightInvitation {
+            $inviteeId = $actor->getKey();
+            $invitation = $current->invitations()->where('invitee_id', $inviteeId)->firstOrFail();
+
+            if ($status === MovieNightInvitation::STATUS_ACCEPTED) {
+                $current->participants()->syncWithoutDetaching([$inviteeId]);
+            } elseif ($invitation->status === MovieNightInvitation::STATUS_ACCEPTED) {
+                $current->participants()->detach($inviteeId);
+            }
+
+            $invitation->status = $status;
+            $invitation->save();
+
+            return $invitation;
+        });
     }
 
     public function forMessage(

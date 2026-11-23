@@ -1,25 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import MoviePagination from '../components/MoviePagination';
-import { useAuth } from '../hooks/useAuth';
 import { getAdminUsers, updateAdminUserStatus } from '../services/adminUsers';
 
 export default function AdminUsersPage() {
-    const { user } = useAuth();
-    if (user?.can_access_admin !== true) {
-        return (
-            <main className="container py-4 text-start">
-                <Link to="/">Back to home</Link>
-                <h1 className="h2 mt-3">User management</h1>
-                <p role="alert" className="alert alert-warning">Administrator access is required.</p>
-            </main>
-        );
-    }
-
-    return <UserManagement />;
-}
-
-function UserManagement() {
     const location = useLocation();
     const [search, setSearch] = useState('');
     const [request, setRequest] = useState({ page: 1, search: '' });

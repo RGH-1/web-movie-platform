@@ -11,8 +11,15 @@ event time zone. Editing another field leaves the stored instant intact,
 including its seconds. A scheduled night cannot return to draft.
 
 The existing API exposes a confirmed participant count. Individual invitees,
-RSVP, voting, calendar export, and watch room depend on separate features.
-The details page marks their entry points unavailable.
+RSVP, voting, and watch room depend on separate features and retain
+unavailable entry points.
+
+AB#144 enables calendar export for scheduled and finalized nights.
+Each download refetches authorized details before generating the file.
+Export is disabled during editing/cancellation, and organizer mutations
+are disabled while the export refresh is pending.
+
+See [Calendar export](calendar-export.md) for behavior and verification.
 
 ## Manual verification
 
