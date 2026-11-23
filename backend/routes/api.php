@@ -114,6 +114,8 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/me/movies', [UserMovieStatusController::class, 'index']);
 
+            Route::get('/me/movie-night-invitations', [MovieNightInvitationController::class, 'inbox']);
+
             Route::get('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'show']);
 
             Route::patch('/me/movies/{movieId}/status', [UserMovieStatusController::class, 'update']);

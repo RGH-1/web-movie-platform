@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import MovieNightError from '../components/MovieNightError';
 import MovieNightForm from '../components/MovieNightForm';
-import { cancelMovieNight, getMovieNight } from '../services/movieNights';
+import { cancelMovieNight, getInvitations, getMovieNight } from '../services/movieNights';
 import { formatMovieNightStart, meetingLink, movieNightStatus } from '../utils/movieNights';
 import { MovieNightCalendarAction } from '../components/CalendarActions';
+import MovieNightInvitations from '../components/MovieNightInvitations';
+import MovieNightShortlist from '../components/MovieNightShortlist';
 
-const tools = ['Invitations', 'Shortlist and voting', 'Watch room'];
 
 export default function MovieNightDetailsPage() {
     const { nightId } = useParams();
@@ -18,10 +19,12 @@ function MovieNightDetails({ nightId }) {
     const [night, setNight] = useState(null);
     const [attempt, setAttempt] = useState(0);
     const [readError, setReadError] = useState(null);
+    const [invitation, setInvitation] = useState(null);
     const [cancelError, setCancelError] = useState(null);
     const [mode, setMode] = useState(null);
     const [cancelling, setCancelling] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [tool, setTool] = useState(null);
     const [notice, setNotice] = useState(state?.movieNightCreated ? 'Movie night created.' : '');
     const mutation = useRef(null);
 
@@ -30,7 +33,15 @@ function MovieNightDetails({ nightId }) {
         getMovieNight(nightId, { signal: controller.signal }).then((response) => {
             if (!controller.signal.aborted) setNight(response);
         }).catch((error) => {
-            if (!controller.signal.aborted) setReadError(error);
+            if (controller.signal.aborted || error.response?.status !== 404) {
+                if (!controller.signal.aborted) setReadError(error);
+                return;
+            }
+            getInvitations(nightId, { signal: controller.signal }).then((grouped) => {
+                const own = ['pending', 'accepted', 'declined'].flatMap((key) => grouped[key] ?? [])[0];
+                if (!controller.signal.aborted && own) setInvitation(own);
+                else if (!controller.signal.aborted) setReadError(error);
+            }).catch(() => { if (!controller.signal.aborted) setReadError(error); });
         });
         return () => controller.abort();
     }, [nightId, attempt]);
@@ -109,10 +120,12 @@ function MovieNightDetails({ nightId }) {
                 )}
             </header>
 
-            {!night && !readError && <p role="status">Loading movie night…</p>}
+            {!night && !invitation && !readError && <p role="status">Loading movie night…</p>}
             {readError && <MovieNightError error={readError} message="Could not load this movie night."
                 onRetry={() => { setReadError(null); setAttempt(attempt + 1); }} />}
             {notice && <p role="status" className="alert alert-success">{notice}</p>}
+            {!night && invitation && <MovieNightInvitations nightId={nightId} invitation={invitation}
+                onAccepted={() => { setInvitation(null); setReadError(null); setAttempt((value) => value + 1); }} />}
             {night && (
                 <>
                     {mode === 'edit' && <MovieNightForm night={night} onCancel={() => setMode(null)}
@@ -187,18 +200,11 @@ function MovieNightDetails({ nightId }) {
                                     </p>
                                 </div>
                             </section>
-
-                            <ul className="list-group">
-                                {tools.map((tool) => (
-                                    <li
-                                        key={tool}
-                                        className="list-group-item d-flex flex-wrap justify-content-between gap-2"
-                                    >
-                                        {tool}
-                                        <span className="text-body-secondary">Unavailable</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="d-flex flex-wrap gap-2 mb-3"><button type="button" className="btn btn-outline-primary" onClick={() => setTool(tool === 'invitations' ? null : 'invitations')}>Invitations</button><button type="button" className="btn btn-outline-primary" onClick={() => setTool(tool === 'shortlist' ? null : 'shortlist')}>Shortlist and voting</button></div>
+                            {tool === 'invitations' && <MovieNightInvitations nightId={night.id} organizer={{ ...night.organizer, viewer_role: night.viewer_role }}
+                                status={night.status} onAccepted={() => setAttempt((value) => value + 1)} />}
+                            {tool === 'shortlist' && <MovieNightShortlist night={night} onFinalized={() => setAttempt((value) => value + 1)} />}
+                            <div className="list-group"><div className="list-group-item d-flex justify-content-between gap-2">Watch room <span className="text-body-secondary">Unavailable</span></div></div>
                         </aside>
                     </div>
                 </>

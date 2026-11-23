@@ -64,26 +64,53 @@ function Home() {
                         <Link to="/feed" className="btn btn-outline-primary">
                             Following feed
                         </Link>
-                        <Link to="/recommendations" className="btn btn-outline-primary">
+                        <Link
+                            to="/recommendations"
+                            className="btn btn-outline-primary"
+                        >
                             Recommendations
                         </Link>
-                        <Link to="/my-lists" className="btn btn-outline-primary">
+                        <Link
+                            to="/my-lists"
+                            className="btn btn-outline-primary"
+                        >
                             My Lists
                         </Link>
-                        <Link to="/lists/public" className="btn btn-outline-primary">
+                        <Link
+                            to="/lists/public"
+                            className="btn btn-outline-primary"
+                        >
                             Public movie lists
                         </Link>
                         <Link to="/my-movies" className="btn btn-primary">
                             My Movies
                         </Link>
-                        <Link to="/movie-nights" className="btn btn-outline-primary">
+                        <Link
+                            to="/movie-nights"
+                            className="btn btn-outline-primary"
+                        >
                             My Movie Nights
                         </Link>
                         {user?.can_access_admin === true && (
                             <>
-                                <Link to="/admin/users" className="btn btn-outline-primary">User management</Link>
-                                <Link to="/admin/movies" className="btn btn-outline-primary">Movie management</Link>
-                                <Link to="/admin/reviews" className="btn btn-outline-primary">Review moderation</Link>
+                                <Link
+                                    to="/admin/users"
+                                    className="btn btn-outline-primary"
+                                >
+                                    User management
+                                </Link>
+                                <Link
+                                    to="/admin/movies"
+                                    className="btn btn-outline-primary"
+                                >
+                                    Movie management
+                                </Link>
+                                <Link
+                                    to="/admin/reviews"
+                                    className="btn btn-outline-primary"
+                                >
+                                    Review moderation
+                                </Link>
                             </>
                         )}
                     </>
@@ -104,23 +131,43 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<PasswordPage mode="forgot" />} />
-            <Route path="/reset-password" element={<PasswordPage mode="reset" />} />
+            <Route
+                path="/forgot-password"
+                element={<PasswordPage mode="forgot" />}
+            />
+            <Route
+                path="/reset-password"
+                element={<PasswordPage mode="reset" />}
+            />
             <Route path="/users/:userId" element={<PublicProfilePage />} />
-            <Route path="/users/:userId/followers" element={<UserRelationshipListPage relationship="followers" />} />
-            <Route path="/users/:userId/following" element={<UserRelationshipListPage relationship="following" />} />
+            <Route
+                path="/users/:userId/followers"
+                element={<UserRelationshipListPage relationship="followers" />}
+            />
+            <Route
+                path="/users/:userId/following"
+                element={<UserRelationshipListPage relationship="following" />}
+            />
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/feed" element={<FollowingFeedPage />} />
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/movies" element={<AdminMoviesPage />} />
                 <Route element={<AdminRoute />}>
                     <Route path="/admin/users" element={<AdminUsersPage />} />
-                    <Route path="/admin/reviews" element={<AdminReviewsPage />} />
+                    <Route path="/admin/movies" element={<AdminMoviesPage />} />
+                    <Route
+                        path="/admin/reviews"
+                        element={<AdminReviewsPage />}
+                    />
                 </Route>
-                <Route path="/recommendations" element={<RecommendationsPage />} />
+                <Route
+                    path="/recommendations"
+                    element={<RecommendationsPage />}
+                />
                 <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/account/password" element={<PasswordPage mode="change" />} />
+                <Route
+                    path="/account/password"
+                    element={<PasswordPage mode="change" />}
+                />
                 <Route path="/movies" element={<MovieDiscovery />} />
                 <Route
                     path="/movies/:tmdbId"
@@ -128,11 +175,17 @@ function App() {
                 />
                 <Route path="/my-movies" element={<MyMoviesPage />} />
                 <Route path="/movie-nights" element={<MyMovieNightsPage />} />
-                <Route path="/movie-nights/:nightId" element={<MovieNightDetailsPage />} />
+                <Route
+                    path="/movie-nights/:nightId"
+                    element={<MovieNightDetailsPage />}
+                />
                 <Route path="/my-lists" element={<MyListsPage />} />
                 <Route path="/lists/public" element={<PublicListsPage />} />
                 <Route path="/lists/:listId" element={<ListDetailsPage />} />
-                <Route path="/movies/local/:movieId" element={<MovieDetailNavigation />} />
+                <Route
+                    path="/movies/local/:movieId"
+                    element={<MovieDetailNavigation />}
+                />
             </Route>
 
             <Route

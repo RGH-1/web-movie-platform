@@ -142,6 +142,26 @@ Cancelled nights remain protected from edits and new vote/message writes.
 - Invitation records expose string `id`, `movie_night_id`, and `inviter_id`,
   the invitee's string `id` and `name`, `status`, and ISO timestamps
   `created_at` and `updated_at`.
+- Each invitation also includes `movie_night_preview`: a whitelisted event
+  summary (`id`, title, description, starts_at, timezone, location,
+  meeting_url, status, and safe organizer ID/name). This is intentionally
+  available only through the invitation endpoint to the organizer or the
+  invitee; it does not grant pending/declined invitees access to the complete
+  protected movie-night resource or its participants, shortlist, or votes.
+
+### My invitation inbox
+
+`GET /api/v1/me/movie-night-invitations` returns invitations received by the
+authenticated user, newest first. It accepts bounded `page` and `per_page`
+(1–50) query parameters and returns the standard paginated `data`, `links`,
+and `meta` response. Each data item uses the invitation representation above,
+including its whitelisted `movie_night_preview`.
+
+The server derives the invitee solely from the authenticated session. It never
+accepts an invitee/user filter, excludes draft movie nights, includes cancelled
+invitations as read-only history, and does not grant access to full movie-night
+details. Accepted invitations remain in the inbox as history and also appear in
+the user's normal My Movie Nights list.
 
 ## Shortlist and voting (AB#125)
 
