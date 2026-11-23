@@ -236,6 +236,11 @@ class MovieNight extends Model
         return $this->belongsTo(Movie::class, 'winning_movie_id');
     }
 
+    public function videoAsset(): BelongsTo
+    {
+        return $this->belongsTo(VideoAsset::class);
+    }
+
     public function isEditable(): bool
     {
         return in_array($this->status, [

@@ -26,6 +26,7 @@ import MyMovieNightsPage from "./pages/MyMovieNightsPage";
 import MovieNightDetailsPage from "./pages/MovieNightDetailsPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import UserRelationshipListPage from "./pages/UserRelationshipListPage";
+import WatchRoomPage from "./pages/WatchRoomPage";
 
 import { useAuth } from "./hooks/useAuth";
 
@@ -179,6 +180,7 @@ function App() {
                     path="/movie-nights/:nightId"
                     element={<MovieNightDetailsPage />}
                 />
+                <Route path="/movie-nights/:nightId/watch-room" element={<WatchRoomPage />} />
                 <Route path="/my-lists" element={<MyListsPage />} />
                 <Route path="/lists/public" element={<PublicListsPage />} />
                 <Route path="/lists/:listId" element={<ListDetailsPage />} />

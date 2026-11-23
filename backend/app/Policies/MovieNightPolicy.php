@@ -46,6 +46,13 @@ class MovieNightPolicy
         return $this->organizes($user, $night) && $night->acceptsVotes();
     }
 
+    public function assignVideo(User $user, MovieNight $night): bool
+    {
+        return $this->organizes($user, $night)
+            && $night->status === MovieNight::STATUS_FINALIZED
+            && $night->winning_movie_id !== null;
+    }
+
     public function invite(User $user, MovieNight $night): bool
     {
         return $this->organizes($user, $night)
