@@ -6,10 +6,11 @@ use App\Http\Resources\PublicProfileResource;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class PublicProfileController extends Controller
 {
-    public function __invoke(Request $request, string $userId): PublicProfileResource
+    public function __invoke(Request $request, string $userId): JsonResponse
     {
         $id = filter_var($userId, FILTER_VALIDATE_INT, [
             'options' => ['min_range' => 1],
@@ -25,9 +26,11 @@ class PublicProfileController extends Controller
         $user->loadExists(['followers as is_following' => fn ($query) => $query->where('follows.follower_id', $request->user('sanctum')?->id ?? 0)]);
 
         $visibleReviews = $user->reviews()
+            ->sharedActivity()
             ->where('moderation_status', Review::STATUS_VISIBLE)
             ->whereHas('movie', fn ($query) => $query->active());
-        $publicLists = $user->movieLists()->where('is_public', true);
+
+        $publicLists = $user->movieLists()->sharedActivity();
 
         $user->setAttribute('public_reviews_count', (clone $visibleReviews)->count());
         $user->setAttribute('public_lists_count', (clone $publicLists)->count());
@@ -38,6 +41,8 @@ class PublicProfileController extends Controller
             ->withCount('movies')
             ->orderByDesc('created_at')->orderByDesc('id')->limit(10)->get());
 
-        return new PublicProfileResource($user);
+        return (new PublicProfileResource($user))
+            ->response()
+            ->header('Cache-Control', 'private, no-store');
     }
 }

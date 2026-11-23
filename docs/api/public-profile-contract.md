@@ -35,11 +35,19 @@ Example response (`200`):
 
 - All IDs are strings. Counts are nonnegative integers. `name` is the user's
   display name. Review text and list description may be null.
-- Review totals include only this user's visible reviews on active movies.
-  Hidden reviews and reviews on deactivated movies are excluded from both
-  totals and previews. Reviews use the existing explicit review resource.
-- List totals and previews include only this user's public lists. Each summary
-  includes the number of list entries, consistent with the list API.
+- Review totals and previews include only this user's opted-in activity:
+  the master switch must be enabled, and the relevant rating-only or
+  written-review category must be enabled. Moderation visibility and
+  active-movie requirements also apply.
+- List totals and previews require master sharing, public-list activity
+  sharing, and is_public = true.
+- These rules apply to guests, owners, and administrators. Counts cover
+  all eligible records; previews remain bounded to ten.
+- Responses use Cache-Control: private, no-store. Preferences are not
+  returned publicly.
+
+See [Public activity privacy](activity-privacy.md).
+
 - Both previews contain at most 10 entries, newest creation first, with
   descending ID as the tie breaker. Statistics count all qualifying entries,
   including those beyond the preview. Empty collections are `[]` and counts

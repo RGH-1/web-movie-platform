@@ -13,11 +13,12 @@ review text. Public lists link to list details.
 ## Verify locally
 
 1. Run the project's pending migrations against your local development database
-   with `php artisan migrate`. The feed reads the `users.share_activity` and
-   `movie_lists.published_at` fields. Start the Laravel API and Vite.
-2. Sign in as account A with a complete profile and activity sharing enabled.
-   On two different active movies, post a star-only rating and a written review.
-   In **My Lists**, create a public list and a private list.
+   with `php artisan migrate`.
+2. Sign in as the account whose activity you’ll test—the fixture author. In profile settings, enable and save all four switches:
+   - Share activity — the master switch.
+   - Share rating-only activity.
+   - Share written-review activity.
+   - Share public-list activity.
 3. On the movie details page with A's written review, click A's name on the
    review card and copy the public profile URL from the address bar. Open that
    URL as account B in a separate browser session and select **Follow**.
@@ -31,3 +32,11 @@ review text. Public lists link to list details.
    unblock the request, and select **Try again**.
 5. Open the feed as an account that follows nobody to see the empty state.
    Check that the cards fit a narrow phone viewport and a desktop viewport.
+
+## Privacy — AB#106
+
+Feed inclusion uses each author's persisted master and category settings.
+Filtering happens on the server before pagination. Viewer-supplied
+settings cannot override author preferences.
+
+See [Public activity privacy](../api/activity-privacy.md).

@@ -292,6 +292,9 @@ class AdminReviewModerationTest extends TestCase
         $movie = Movie::factory()->create();
         $low = $this->makeReview($movie, 2);
         $high = $this->makeReview($movie, 4);
+        $high->user->forceFill(
+            array_fill_keys(User::ACTIVITY_SHARING_FIELDS, true),
+        )->save();
         $publicUrl = "/api/v1/catalog/movies/{$movie->id}/reviews";
         $profileUrl = "/api/v1/users/{$high->user_id}/profile";
 

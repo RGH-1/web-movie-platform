@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\Builder;
 
 class Review extends Model
 {
@@ -14,6 +15,7 @@ class Review extends Model
     public const SENTIMENT_COMPLETED = 'completed';
     public const SENTIMENT_FAILED = 'failed';
     public const SENTIMENT_SKIPPED = 'skipped';
+    public const RATING_ONLY_SQL = "(reviews.review_text IS NULL OR TRIM(reviews.review_text) = '')";
 
     protected $fillable = [
         'rating',
@@ -83,5 +85,30 @@ class Review extends Model
         ]);
 
         return $hash;
+    }
+
+    public function scopeSharedActivity(Builder $query): Builder
+    {
+        return $query->where(function (Builder $activities): void {
+            $activities
+                ->where(function (Builder $ratings): void {
+                    $ratings
+                        ->whereRaw(self::RATING_ONLY_SQL)
+                        ->whereHas(
+                            'user',
+                            fn (Builder $users): Builder => $users
+                                ->sharingActivity('rating'),
+                        );
+                })
+                ->orWhere(function (Builder $reviews): void {
+                    $reviews
+                        ->whereRaw('NOT '.self::RATING_ONLY_SQL)
+                        ->whereHas(
+                            'user',
+                            fn (Builder $users): Builder => $users
+                                ->sharingActivity('review'),
+                        );
+                });
+        });
     }
 }

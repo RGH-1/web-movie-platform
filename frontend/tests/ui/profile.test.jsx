@@ -107,20 +107,44 @@ afterEach(() => {
   api.defaults.adapter = originalAdapter;
 });
 
-it('saves changes to the following-feed sharing preference', async () => {
+it('pauses all sharing without losing saved category selections', async () => {
   const user = userEvent.setup();
+
+  Object.assign(savedProfile, {
+    share_activity: true,
+    share_ratings: false,
+    share_reviews: true,
+    share_public_lists: true,
+  });
+
   openProfile();
   await openEditor(user);
 
-  const sharing = screen.getByRole('checkbox', { name: /share my reviews/i });
-  expect(sharing).toBeChecked();
-  await user.click(sharing);
+  const master = screen.getByRole('checkbox', {
+    name: 'Enable selected public activity sharing',
+  });
+
+  expect(master).toBeChecked();
+
+  await user.click(master);
   await user.click(screen.getByRole('button', { name: 'Save changes' }));
   await screen.findByText('Your profile was saved.');
-  expect(patches).toEqual([expect.objectContaining({ share_activity: false })]);
+
+  expect(patches[0]).toMatchObject({ share_activity: false });
+  expect(patches[0]).not.toHaveProperty('share_reviews');
+  expect(patches[0]).not.toHaveProperty('share_public_lists');
 
   await openEditor(user);
-  expect(screen.getByRole('checkbox', { name: /share my reviews/i })).not.toBeChecked();
+
+  const reviews = screen.getByRole('checkbox', {
+    name: 'Share written reviews and their star ratings',
+  });
+
+  expect(reviews).toBeChecked();
+  expect(reviews).toBeDisabled();
+  expect(screen.getByRole('checkbox', {
+    name: 'Enable selected public activity sharing',
+  })).not.toBeChecked();
 });
 
 describe('profile viewing and authentication', () => {
@@ -284,12 +308,25 @@ describe('profile editing and errors', () => {
     await openEditor(user);
     await user.type(screen.getByLabelText('Bio (optional)'), 'Retain me');
     await user.click(screen.getByLabelText('Family'));
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    }));
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Share written reviews and their star ratings',
+    }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       failure === 419 ? 'security session expired' : 'couldn’t confirm',
     );
     expect(screen.getByLabelText('Bio (optional)')).toHaveValue('Retain me');
     expect(screen.getByLabelText('Family')).toBeChecked();
+    expect(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    })).toBeChecked();
+
+    expect(screen.getByRole('checkbox', {
+      name: 'Share written reviews and their star ratings',
+    })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
     expect(screen.queryByText('Your profile was saved.')).not.toBeInTheDocument();
   });
@@ -315,12 +352,25 @@ describe('profile editing and errors', () => {
       : normal(config);
     openProfile();
     await openEditor(user);
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    }));
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Share rating-only activity',
+    }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await screen.findByText('Saving your profile…');
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Saving…' }));
     expect(patches).toHaveLength(1);
+    expect(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    })).toBeDisabled();
+
+    expect(screen.getByRole('checkbox', {
+      name: 'Share rating-only activity',
+    })).toBeDisabled();
     await act(async () => resolveSave());
     expect(await screen.findByText('Your profile was saved.')).toBeInTheDocument();
   });
@@ -423,4 +473,93 @@ it('saves numeric genres, reloads selections, enforces five choices, and clears 
 
   await openEditor(user);
   expect(screen.getByLabelText('Family')).not.toBeChecked();
+});
+
+describe('public activity privacy (AB#106)', () => {
+  const choices = [
+    ['share_ratings', 'Share rating-only activity'],
+    ['share_reviews', 'Share written reviews and their star ratings'],
+    ['share_public_lists', 'Share public-list activity'],
+  ];
+
+  it('starts with all sharing disabled', async () => {
+    const user = userEvent.setup();
+    openProfile();
+    await openEditor(user);
+
+    expect(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    })).not.toBeChecked();
+
+    for (const [, label] of choices) {
+      const checkbox = screen.getByRole('checkbox', { name: label });
+      expect(checkbox).not.toBeChecked();
+      expect(checkbox).toBeDisabled();
+    }
+  });
+
+  it.each(choices)('saves and reloads %s independently', async (field, label) => {
+    const user = userEvent.setup();
+    const view = openProfile();
+    await openEditor(user);
+
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    }));
+    await user.click(screen.getByRole('checkbox', { name: label }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await screen.findByText('Your profile was saved.');
+
+    expect(patches[0]).toMatchObject({
+      share_activity: true,
+      [field]: true,
+    });
+
+    for (const [other] of choices) {
+      if (other !== field) expect(patches[0]).not.toHaveProperty(other);
+    }
+
+    view.unmount();
+    openProfile();
+    await openEditor(user);
+
+    for (const [candidate, candidateLabel] of choices) {
+      const checkbox = screen.getByRole('checkbox', {
+        name: candidateLabel,
+      });
+
+      if (candidate === field) expect(checkbox).toBeChecked();
+      else expect(checkbox).not.toBeChecked();
+    }
+  });
+
+  it('shows server preference errors and preserves the draft', async () => {
+    const user = userEvent.setup();
+    const normal = respond;
+
+    respond = async (config) => config.method === 'patch'
+      ? response(config, 422, {
+        errors: { share_reviews: ['Sharing could not be saved.'] },
+      })
+      : normal(config);
+
+    openProfile();
+    await openEditor(user);
+
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Enable selected public activity sharing',
+    }));
+    await user.click(screen.getByRole('checkbox', {
+      name: 'Share written reviews and their star ratings',
+    }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await screen.findByText('Sharing could not be saved.');
+
+    expect(screen.getByRole('checkbox', {
+      name: 'Share written reviews and their star ratings',
+    })).toBeChecked();
+    expect(screen.queryByText('Your profile was saved.'))
+      .not.toBeInTheDocument();
+  });
 });

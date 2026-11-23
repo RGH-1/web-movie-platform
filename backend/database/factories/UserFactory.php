@@ -42,4 +42,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function sharingAllActivity(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'share_activity' => true,
+            'share_ratings' => true,
+            'share_reviews' => true,
+            'share_public_lists' => true,
+        ]);
+    }
 }

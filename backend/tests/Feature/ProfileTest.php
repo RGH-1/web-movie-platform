@@ -23,12 +23,29 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
+
         $this->actingAs($user, 'web')
             ->getJson(self::URL.'?id='.$other->id)
-            ->assertOk()->assertExactJson(['data' => [
-                'id' => $user->id, 'name' => $user->name,
-                'email' => $user->email, 'bio' => null, 'favorite_genres' => [], 'share_activity' => true, 'has_local_password' => true, 'can_access_admin' => false,
-            ], 'meta' => ['profile_complete' => true, 'incomplete_fields' => []]]);
+            ->assertOk()
+            ->assertExactJson([
+                'data' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'bio' => null,
+                    'favorite_genres' => [],
+                    'share_activity' => false,
+                    'share_ratings' => false,
+                    'share_reviews' => false,
+                    'share_public_lists' => false,
+                    'has_local_password' => true,
+                    'can_access_admin' => false,
+                ],
+                'meta' => [
+                    'profile_complete' => true,
+                    'incomplete_fields' => [],
+                ],
+            ]);
     }
 
     public function test_updates_normalize_fields_and_preserve_omitted_values(): void

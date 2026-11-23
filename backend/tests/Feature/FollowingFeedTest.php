@@ -15,9 +15,9 @@ class FollowingFeedTest extends TestCase
     public function test_feed_filters_activities_and_paginates_across_tied_timestamps(): void
     {
         $this->freezeSecond();
-        $viewer = User::factory()->create();
-        $author = User::factory()->create();
-        $outsider = User::factory()->create();
+        $viewer = User::factory()->sharingAllActivity()->create();
+        $author = User::factory()->sharingAllActivity()->create();
+        $outsider = User::factory()->sharingAllActivity()->create();
         $viewer->following()->attach($author);
         $outsider->following()->attach($viewer);
 
@@ -58,7 +58,7 @@ class FollowingFeedTest extends TestCase
     {
         $this->freezeSecond();
         $viewer = User::factory()->create();
-        $author = User::factory()->create();
+        $author = User::factory()->sharingAllActivity()->create();
         $viewer->following()->attach($author);
         $list = $author->movieLists()->create(['name' => 'Draft']);
         $legacy = $author->movieLists()->create(['name' => 'Legacy', 'is_public' => true]);
@@ -87,8 +87,8 @@ class FollowingFeedTest extends TestCase
     public function test_author_activity_preference_applies_before_pagination(): void
     {
         $viewer = User::factory()->create();
-        $author = User::factory()->create();
-        $other = User::factory()->create();
+        $author = User::factory()->sharingAllActivity()->create();
+        $other = User::factory()->sharingAllActivity()->create();
         $viewer->following()->attach([$author->id, $other->id]);
 
         $remaining = $this->reviewFor($other);
