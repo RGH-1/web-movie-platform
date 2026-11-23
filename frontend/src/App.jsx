@@ -112,10 +112,9 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/feed" element={<FollowingFeedPage />} />
-                <Route path="/admin/users" element={<AdminUsersPage />} />
-                <Route path="/admin/movies" element={<AdminMoviesPage />} />
                 <Route element={<AdminRoute />}>
                     <Route path="/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/admin/movies" element={<AdminMoviesPage />} />
                     <Route path="/admin/reviews" element={<AdminReviewsPage />} />
                 </Route>
                 <Route path="/recommendations" element={<RecommendationsPage />} />
