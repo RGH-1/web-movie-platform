@@ -6,10 +6,17 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use App\Support\MovieGenres;
+use App\Models\User;
 
 class UpdateProfileRequest extends FormRequest
 {
-    public const EDITABLE_FIELDS = ['name', 'email', 'bio', 'favorite_genres', 'share_activity'];
+    public const EDITABLE_FIELDS = [
+        'name',
+        'email',
+        'bio',
+        'favorite_genres',
+        ...User::ACTIVITY_SHARING_FIELDS,
+    ];
 
     public function authorize(): bool
     {
@@ -39,7 +46,10 @@ class UpdateProfileRequest extends FormRequest
                 'email:rfc', Rule::unique('users', 'email')->ignore($this->user()),
             ],
             'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'share_activity' => ['sometimes', 'boolean'],
+            'share_activity' => ['sometimes', 'boolean:strict'],
+            'share_ratings' => ['sometimes', 'boolean:strict'],
+            'share_reviews' => ['sometimes', 'boolean:strict'],
+            'share_public_lists' => ['sometimes', 'boolean:strict'],
             'favorite_genres' => ['sometimes', 'array', 'list', 'max:5'],
             'favorite_genres.*' => [
                 'bail',

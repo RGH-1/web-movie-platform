@@ -49,3 +49,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [My Movie Nights planner (AB#122)](frontend/movie-nights.md)
 - [Favorite genre preferences (AB#115)](frontend/favorite-genre-preferences.md)
 - [Calendar export and frontend actions (AB#144)](frontend/calendar-export.md)
+- [Public activity privacy (AB#106)](api/activity-privacy.md)

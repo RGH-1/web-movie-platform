@@ -82,3 +82,15 @@ frontend.
 
 See [Favorite genre preferences](favorite-genre-preferences.md) for the
 complete behavior and verification record.
+
+
+## Public activity privacy — AB#106
+
+The editor supports a master sharing switch and separate rating-only,
+written-review, and public-list activity selections.
+
+Missing preferences default to false in the client. Only changed
+preferences are submitted. Disabling the master preserves category
+selections. All controls follow the existing saving/error behavior.
+
+See [Public activity privacy](../api/activity-privacy.md).

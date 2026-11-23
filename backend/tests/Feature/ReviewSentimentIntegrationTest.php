@@ -167,7 +167,7 @@ class ReviewSentimentIntegrationTest extends TestCase
     private function createWrittenReview(): Review
     {
         $movie = Movie::factory()->create();
-        $author = User::factory()->create();
+        $author = User::factory()->sharingAllActivity()->create();
 
         $id = $this->actingAs($author, 'web')
             ->postJson(

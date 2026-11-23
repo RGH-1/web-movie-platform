@@ -44,8 +44,8 @@ class PublicProfileTest extends TestCase
 
     public function test_only_public_activity_is_returned_even_to_the_owner(): void
     {
-        $author = User::factory()->create();
-        $other = User::factory()->create();
+        $author = User::factory()->sharingAllActivity()->create();
+        $other = User::factory()->sharingAllActivity()->create();
         $movie = Movie::factory()->create();
         $visible = $author->reviews()->make(['rating' => 4, 'review_text' => 'Public review']);
         $visible->movie()->associate($movie);
@@ -88,7 +88,7 @@ class PublicProfileTest extends TestCase
 
     public function test_previews_are_bounded_but_counts_cover_all_public_content(): void
     {
-        $author = User::factory()->create();
+        $author = User::factory()->sharingAllActivity()->create();
         for ($i = 0; $i < 12; $i++) {
             $author->movieLists()->create(['name' => "List $i", 'is_public' => true]);
             $review = $author->reviews()->make(['rating' => 3]);

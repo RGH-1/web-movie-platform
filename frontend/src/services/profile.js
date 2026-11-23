@@ -1,4 +1,7 @@
 import api from './api';
+import {
+  ACTIVITY_SHARING_FIELDS, readActivitySharing,
+} from '../utils/activitySharing.js';
 
 function readProfile(body) {
   const profile = body?.data;
@@ -7,13 +10,18 @@ function readProfile(body) {
   if (
     typeof profile !== 'object' || Array.isArray(profile) ||
     !Number.isInteger(profile.id) ||
-    typeof profile.name !== 'string' || (profile.email !== null && typeof profile.email !== 'string') ||
+    typeof profile.name !== 'string' ||
+    (profile.email !== null && typeof profile.email !== 'string') ||
     (profile.bio != null && typeof profile.bio !== 'string') ||
     (profile.favorite_genres != null &&
       (!Array.isArray(profile.favorite_genres) ||
         !profile.favorite_genres.every(
           (genre) => Number.isInteger(genre) && genre > 0,
-        )))
+        ))) ||
+    ACTIVITY_SHARING_FIELDS.some(
+      (field) => profile[field] != null &&
+        typeof profile[field] !== 'boolean',
+    )
   ) {
     throw new Error('Unexpected profile response.');
   }
@@ -22,6 +30,7 @@ function readProfile(body) {
     ...profile,
     bio: profile.bio ?? null,
     favorite_genres: profile.favorite_genres ?? [],
+    ...readActivitySharing(profile),
   };
 }
 
@@ -36,7 +45,14 @@ export async function updateProfile(fields, { signal } = {}) {
 
   // Explicit allowlist: never send an entire user model back to Laravel.
   const payload = Object.fromEntries(
-    ['name', 'email', 'bio', 'favorite_genres', 'share_activity', 'current_password']
+    [
+      'name',
+      'email',
+      'bio',
+      'favorite_genres',
+      ...ACTIVITY_SHARING_FIELDS,
+      'current_password',
+    ]
       .filter((field) => Object.hasOwn(fields, field))
       .map((field) => [field, fields[field]]),
   );

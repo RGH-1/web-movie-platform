@@ -17,6 +17,10 @@ add a nullable `bio` field.
 | `bio` | No | Account owner | Accept `null` or plain text up to 500 characters after trimming. Store a blank bio as `null`. |
 | `id` | System assigned | Server only | Return the existing user ID as an integer. |
 | `favorite_genres` | No | Account owner | A JSON list of up to five distinct supported TMDB movie genre IDs, supplied as integers. Send `[]` to clear it. |
+| `share_activity` | No | Account owner | Boolean master switch; false for new accounts. |
+| `share_ratings` | No | Account owner | Boolean opt-in for rating-only activity. |
+| `share_reviews` | No | Account owner | Boolean opt-in for written-review activity, including its stars. |
+| `share_public_lists` | No | Account owner | Boolean opt-in for public-list activity. |
 
 Store the initial profile on the existing `users` record. Registration
 collects `name` and `email`. After registration, users can personalize
@@ -30,6 +34,10 @@ Possible additions include a profile image and a favorite movie. A profile
 image needs an upload and storage design. A favorite movie needs a rule
 for validating and displaying a TMDB movie reference. Define those
 contracts before adding either field to the profile editor.
+
+Sharing preferences use strict JSON booleans and are optional for profile
+completion. They are editable through the existing owner-only PATCH flow.
+See [Public activity privacy](activity-privacy.md).
 
 ### Favorite genres
 

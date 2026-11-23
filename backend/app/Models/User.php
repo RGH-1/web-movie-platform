@@ -11,9 +11,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
+    public const ACTIVITY_SHARING_FIELDS = [
+        'share_activity',
+        'share_ratings',
+        'share_reviews',
+        'share_public_lists',
+    ];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -30,7 +38,10 @@ class User extends Authenticatable
 
     protected $attributes = [
         'is_admin' => false,
-        'share_activity' => true,
+        'share_activity' => false,
+        'share_ratings' => false,
+        'share_reviews' => false,
+        'share_public_lists' => false,
     ];
 
     /**
@@ -43,6 +54,10 @@ class User extends Authenticatable
         'remember_token',
         'is_admin',
         'disabled_at',
+        'share_activity',
+        'share_ratings',
+        'share_reviews',
+        'share_public_lists',
     ];
 
     /**
@@ -78,9 +93,26 @@ class User extends Authenticatable
             'password' => 'hashed',
             'favorite_genres' => 'array',
             'share_activity' => 'boolean',
+            'share_ratings' => 'boolean',
+            'share_reviews' => 'boolean',
+            'share_public_lists' => 'boolean',
             'is_admin' => 'boolean',
             'disabled_at' => 'datetime',
         ];
+    }
+
+    public function scopeSharingActivity(Builder $query, string $type): Builder
+    {
+        $field = match ($type) {
+            'rating' => 'share_ratings',
+            'review' => 'share_reviews',
+            'public_list' => 'share_public_lists',
+            default => throw new \InvalidArgumentException('Unknown activity type.'),
+        };
+
+        return $query
+            ->where('users.share_activity', true)
+            ->where('users.'.$field, true);
     }
 
     public function revokeDatabaseSessions(): void

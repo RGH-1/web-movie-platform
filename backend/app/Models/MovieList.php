@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class MovieList extends Model
 {
@@ -24,6 +25,17 @@ class MovieList extends Model
                 $list->published_at = $list->is_public ? now() : null;
             }
         });
+    }
+
+    public function scopeSharedActivity(Builder $query): Builder
+    {
+        return $query
+            ->where('movie_lists.is_public', true)
+            ->whereHas(
+                'user',
+                fn (Builder $users): Builder => $users
+                    ->sharingActivity('public_list'),
+            );
     }
 
     public function user(): BelongsTo

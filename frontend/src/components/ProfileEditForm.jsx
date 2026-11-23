@@ -3,6 +3,12 @@ import { updateProfile } from '../services/profile';
 import {
   GENRE_OPTIONS, profileToForm, emailIsChanging, validateProfileForm, buildProfileUpdate,
 } from '../utils/profileForm';
+import {
+  ACTIVITY_SHARING_CHOICES,
+  readActivitySharing,
+  changedActivitySharing,
+} from '../utils/activitySharing.js';
+
 
 function FieldErrors({ field, errors }) {
   const messages = Object.entries(errors)
@@ -19,7 +25,7 @@ function FieldErrors({ field, errors }) {
 
 export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthenticated }) {
   const [form, setForm] = useState(() => profileToForm(profile));
-  const [shareActivity, setShareActivity] = useState(profile.share_activity ?? true);
+  const [sharing, setSharing] = useState(() => readActivitySharing(profile));
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,6 +39,16 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => Object.fromEntries(
       Object.entries(current).filter(([key]) => key !== field && !key.startsWith(field + '.')),
+    ));
+    setMessage('');
+  }
+
+  function changeSharing(field, value) {
+    setSharing((current) => ({ ...current, [field]: value }));
+    setErrors((current) => Object.fromEntries(
+      Object.entries(current).filter(
+        ([key]) => key !== field && !key.startsWith(field + '.'),
+      ),
     ));
     setMessage('');
   }
@@ -72,7 +88,7 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
 
     try {
       const fields = buildProfileUpdate(form, profile);
-      if (shareActivity !== (profile.share_activity ?? true)) fields.share_activity = shareActivity;
+      Object.assign(fields, changedActivitySharing(sharing, profile));
       const saved = await updateProfile(fields, {
         signal: controller.signal,
       });
@@ -185,14 +201,63 @@ export default function ProfileEditForm({ profile, onSaved, onCancel, onUnauthen
           <FieldErrors field="favorite_genres" errors={errors} />
         </fieldset>
 
-        <div className="form-check mb-3">
-          <label className="form-check-label">
-            <input type="checkbox" className="form-check-input" checked={shareActivity}
-              onChange={(event) => setShareActivity(event.target.checked)} />
-            Share my reviews, ratings, and public lists in the following feed
-          </label>
-          <FieldErrors field="share_activity" errors={errors} />
-        </div>
+        <fieldset className="mb-4" aria-describedby="activity-sharing-help">
+          <legend className="fs-6">Public activity privacy</legend>
+
+          <p id="activity-sharing-help" className="form-text mt-0">
+            Choose what appears on your public profile and in followers’ feeds.
+            These choices apply to existing and future activity.
+            Your movie-page reviews remain public, and lists marked public remain accessible.
+          </p>
+
+          <div className="form-check mb-2">
+            <input
+              id="profile-share_activity"
+              type="checkbox"
+              className="form-check-input"
+              checked={sharing.share_activity}
+              onChange={(event) => changeSharing(
+                'share_activity',
+                event.target.checked,
+              )}
+              aria-invalid={hasError('share_activity')}
+              aria-describedby={hasError('share_activity')
+                ? 'share_activity-errors'
+                : undefined}
+            />
+            <label className="form-check-label" htmlFor="profile-share_activity">
+              Enable selected public activity sharing
+            </label>
+            <FieldErrors field="share_activity" errors={errors} />
+          </div>
+
+          <p className="small text-body-secondary">
+            Turn off the main switch to pause all activity sharing without losing
+            your category selections.
+          </p>
+
+          <fieldset disabled={!sharing.share_activity}>
+            <legend className="visually-hidden">Activity categories</legend>
+
+            {ACTIVITY_SHARING_CHOICES.map(({ field, label }) => (
+              <div key={field} className="form-check mb-2">
+                <input
+                  id={'profile-' + field}
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={sharing[field]}
+                  onChange={(event) => changeSharing(field, event.target.checked)}
+                  aria-invalid={hasError(field)}
+                  aria-describedby={hasError(field) ? field + '-errors' : undefined}
+                />
+                <label className="form-check-label" htmlFor={'profile-' + field}>
+                  {label}
+                </label>
+                <FieldErrors field={field} errors={errors} />
+              </div>
+            ))}
+          </fieldset>
+        </fieldset>
 
         <FieldErrors field="profile" errors={errors} />
         <div className="d-flex flex-wrap gap-2">
