@@ -33,6 +33,7 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Review moderation interface (AB#148)](frontend/admin-review-moderation.md)
 - [Administrator user management (AB#152)](frontend/admin-user-management.md)
 - [Weather service integration (AB#113)](api/weather-service-integration.md)
+- [Nearby cinema search (AB#138)](api/nearby-cinemas.md)
 - [Administrator movie catalog API (AB#154)](api/admin-movie-catalog-contract.md)
 - [Administrator movie catalog frontend handoff (AB#154/155)](api/admin-movie-catalog-frontend-handoff.md)
 - [Movie management interface (AB#155)](frontend/admin-movie-management.md)
