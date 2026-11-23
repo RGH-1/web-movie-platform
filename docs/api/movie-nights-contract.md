@@ -218,3 +218,13 @@ Existing coverage reused:
 | ISO timestamps and validation | Pass |
 
 Record actual results and the tested commit before closing AB#121.
+
+## Calendar export consumer — AB#144
+
+The existing React planner refetches authorized details before generating
+a calendar file. Current scheduling, status, and visibility rules apply.
+
+Files are generated in the browser. No calendar API endpoint or public
+event URL is introduced.
+
+See [Calendar export](../frontend/calendar-export.md).

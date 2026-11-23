@@ -143,7 +143,11 @@ it('shows participant details without organizer controls, and gives unavailable 
     expect(screen.getByRole('link', { name: 'Morgan' })).toHaveAttribute('href', '/users/4');
     expect(screen.getByText('2 confirmed, excluding the organizer')).toBeInTheDocument();
     expect(screen.getByText('Asia/Beirut', { exact: false })).toHaveAttribute('dateTime', draft.starts_at);
-    expect(screen.getByText('Calendar export')).toHaveTextContent('Calendar export Unavailable');
+    expect(screen.getByRole('region', { name: 'Calendar export' }))
+        .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add movie night to calendar' }))
+        .toBeEnabled();
+    expect(screen.getAllByText('Unavailable')).toHaveLength(3);
     expect(screen.queryByRole('button', { name: 'Edit movie night' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel movie night' })).not.toBeInTheDocument();
 });
