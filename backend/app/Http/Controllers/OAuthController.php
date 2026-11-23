@@ -187,7 +187,7 @@ class OAuthController extends Controller
             }
         }
 
-        if (! $user) {
+        if (! $user || $user->disabled_at !== null) {
             return $this->fail('account_unavailable');
         }
 

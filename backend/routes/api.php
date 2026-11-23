@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminMovieController;
 use App\Http\Controllers\AdminReviewController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\CatalogMovieController;
 use App\Http\Controllers\FollowController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\TmdbIntegrationController;
 use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 use App\Http\Controllers\MovieNightController;
+use App\Http\Controllers\MovieNightInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -55,7 +57,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/users/{userId}/following', [FollowController::class, 'following']);
 
     // Routes available to any authenticated account.
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.enabled'])->group(function () {
         Route::get('/feed', FollowingFeedController::class);
 
         Route::post('/users/{userId}/follow', [FollowController::class, 'store']);
@@ -79,6 +81,8 @@ Route::prefix('v1')->group(function () {
             Route::patch('/movies/{movieId}', [AdminMovieController::class, 'update']);
             Route::delete('/movies/{movieId}', [AdminMovieController::class, 'destroy']);
             Route::get('/dashboard', AdminDashboardController::class);
+            Route::get('/users', [AdminUserController::class, 'index']);
+            Route::patch('/users/{userId}/status', [AdminUserController::class, 'update']);
             Route::get('/reviews', [AdminReviewController::class, 'index']);
             Route::patch('/reviews/{review}/moderation', [AdminReviewController::class, 'update']);
         });
@@ -119,6 +123,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/movie-nights/{movieNight}',[MovieNightController::class, 'show']);
             Route::patch('/movie-nights/{movieNight}',[MovieNightController::class, 'update']);
             Route::post('/movie-nights/{movieNight}/cancel',[MovieNightController::class, 'cancel']);
+            Route::post('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'store']);
+            Route::get('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'index'])
+                ->name('movie-nights.invitations.index');
+            Route::patch('/movie-nights/{movieNight}/rsvp', [MovieNightInvitationController::class, 'respond'])
+                ->name('movie-nights.rsvp');
         });
     });
 });

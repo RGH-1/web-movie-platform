@@ -4,6 +4,7 @@ import { Link, Route, Routes, useLocation } from "react-router-dom";
 import ApiHealthCheck from "./components/ApiHealthCheck";
 import TmdbIntegrationTest from "./components/TmdbIntegrationTest";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import ProfileCompletionNotice from "./components/ProfileCompletionNotice";
 
 import Register from "./pages/Register";
@@ -18,6 +19,8 @@ import ListDetailsPage from "./pages/ListDetailsPage";
 import PublicListsPage from "./pages/PublicListsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import FollowingFeedPage from "./pages/FollowingFeedPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminReviewsPage from "./pages/AdminReviewsPage";
 import MyMovieNightsPage from "./pages/MyMovieNightsPage";
 import MovieNightDetailsPage from "./pages/MovieNightDetailsPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
@@ -30,7 +33,7 @@ import "./App.css";
 // Development homepage
 function Home() {
     const location = useLocation();
-    const { isAuthenticated, profileCompletion } = useAuth();
+    const { user, isAuthenticated, profileCompletion } = useAuth();
 
     const successMessage =
         location.state?.registrationSuccess || location.state?.loginSuccess;
@@ -75,6 +78,12 @@ function Home() {
                         <Link to="/movie-nights" className="btn btn-outline-primary">
                             My Movie Nights
                         </Link>
+                        {user?.can_access_admin === true && (
+                            <>
+                                <Link to="/admin/users" className="btn btn-outline-primary">User management</Link>
+                                <Link to="/admin/reviews" className="btn btn-outline-primary">Review moderation</Link>
+                            </>
+                        )}
                     </>
                 )}
             </div>
@@ -101,6 +110,10 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
                 <Route path="/feed" element={<FollowingFeedPage />} />
+                <Route element={<AdminRoute />}>
+                    <Route path="/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/admin/reviews" element={<AdminReviewsPage />} />
+                </Route>
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/account/password" element={<PasswordPage mode="change" />} />

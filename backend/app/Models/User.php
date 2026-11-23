@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class User extends Authenticatable
@@ -41,6 +42,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'is_admin',
+        'disabled_at',
     ];
 
     /**
@@ -77,7 +79,16 @@ class User extends Authenticatable
             'favorite_genres' => 'array',
             'share_activity' => 'boolean',
             'is_admin' => 'boolean',
+            'disabled_at' => 'datetime',
         ];
+    }
+
+    public function revokeDatabaseSessions(): void
+    {
+        if (config('session.driver') === 'database') {
+            DB::connection(config('session.connection'))->table(config('session.table'))
+                ->where('user_id', $this->getKey())->delete();
+        }
     }
 
     public function movieLists(): HasMany
