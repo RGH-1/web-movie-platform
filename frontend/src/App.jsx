@@ -19,6 +19,7 @@ import PublicListsPage from "./pages/PublicListsPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import FollowingFeedPage from "./pages/FollowingFeedPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminMoviesPage from "./pages/AdminMoviesPage";
 import MyMovieNightsPage from "./pages/MyMovieNightsPage";
 import MovieNightDetailsPage from "./pages/MovieNightDetailsPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
@@ -77,7 +78,10 @@ function Home() {
                             My Movie Nights
                         </Link>
                         {user?.can_access_admin === true && (
-                            <Link to="/admin/users" className="btn btn-outline-primary">User management</Link>
+                            <>
+                                <Link to="/admin/users" className="btn btn-outline-primary">User management</Link>
+                                <Link to="/admin/movies" className="btn btn-outline-primary">Movie management</Link>
+                            </>
                         )}
                     </>
                 )}
@@ -106,6 +110,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
                 <Route path="/feed" element={<FollowingFeedPage />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/movies" element={<AdminMoviesPage />} />
                 <Route path="/recommendations" element={<RecommendationsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/account/password" element={<PasswordPage mode="change" />} />
