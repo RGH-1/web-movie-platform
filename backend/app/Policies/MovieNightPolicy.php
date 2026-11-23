@@ -38,8 +38,12 @@ class MovieNightPolicy
 
     public function vote(User $user, MovieNight $night): bool
     {
-        return $this->organizes($user, $night)
-            && $night->acceptsVotes();
+        return $night->acceptsVotes() && $this->view($user, $night);
+    }
+
+    public function finalize(User $user, MovieNight $night): bool
+    {
+        return $this->organizes($user, $night) && $night->acceptsVotes();
     }
 
     public function invite(User $user, MovieNight $night): bool

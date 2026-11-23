@@ -6,8 +6,8 @@ This task introduces movie-night storage, relationships, lifecycle rules,
 ownership policies, and a transactional write guard.
 
 AB#121 adds the authenticated management API and trusted participant
-membership. Invitation delivery, shortlist storage, votes, messages, and
-frontend flows remain separate work.
+membership. AB#124 adds invitations and RSVP. AB#125 adds shortlist storage,
+votes, and winner finalization.
 
 See the [management API contract](../api/movie-nights-contract.md).
 
@@ -119,8 +119,8 @@ Reading history is separate from permission to create new activity.
 AB#121 permits trusted participants to read scheduled, finalized, and
 cancelled nights. Drafts remain organizer-only.
 
-Vote and message permissions remain organizer-only until their respective
-features extend participation authorization.
+Accepted participants can propose candidates and vote on scheduled nights.
+Finalization is organizer-only. The message policy remains organizer-only.
 
 ## Application write boundary
 
@@ -128,7 +128,8 @@ MovieNightAccessService exposes:
 
 - update(actor, night, attributes)
 - cancel(actor, night)
-- forVote(actor, night, writeCallback)
+- forVote(actor, night, writeCallback) for proposals and ballots
+- forFinalization(actor, night, writeCallback)
 - forMessage(actor, night, writeCallback)
 
 Each method reloads and locks the current movie-night row inside a database
@@ -137,13 +138,13 @@ transaction before authorizing the action.
 The update method rejects unexpected fields rather than partially accepting
 protected assignments.
 
-Future vote/message handlers must perform their database insert inside the
+Vote/message handlers must perform their database insert inside the
 corresponding guard callback.
 
 A policy check against an earlier model instance is insufficient: another
 operation may have cancelled or finalized the night since it was loaded.
 
-Cancellation and future finalization must follow the same parent-row locking
+Cancellation and finalization follow the same parent-row locking
 discipline as vote/message writes.
 
 Keep database work inside the callback. Dispatch external effects and
@@ -161,8 +162,11 @@ middleware, dedicated Form Requests, or safe API resources.
 - MovieNight::participants() <-> User::participatingMovieNights()
 
 MovieNight::participants() and User::participatingMovieNights() use
-movie_night_participants. Invitation, vote, and message relationships remain
-unimplemented.
+movie_night_participants. The voting service writes directly to the shortlist
+and vote tables inside the movie-night lock. A unique constraint permits
+one candidate per canonical movie per night, a composite vote primary key
+permits one ballot per voter per night, and a composite foreign key keeps
+each ballot on its own night's shortlist.
 
 ## Verification
 

@@ -105,6 +105,16 @@ class MovieNightAccessService
         return $this->withPermission($actor, $night, 'vote', $write);
     }
 
+    public function forFinalization(User $actor, MovieNight $night, Closure $write): mixed
+    {
+        return $this->withPermission($actor, $night, 'finalize', $write);
+    }
+
+    public function forViewing(User $actor, MovieNight $night, Closure $read): mixed
+    {
+        return $this->withPermission($actor, $night, 'view', $read);
+    }
+
     public function invite(User $actor, MovieNight $night, int $inviteeId): MovieNightInvitation
     {
         return $this->withPermission($actor, $night, 'invite', function (MovieNight $current) use ($actor, $inviteeId): MovieNightInvitation {
@@ -135,6 +145,13 @@ class MovieNightAccessService
                 $current->participants()->syncWithoutDetaching([$inviteeId]);
             } elseif ($invitation->status === MovieNightInvitation::STATUS_ACCEPTED) {
                 $current->participants()->detach($inviteeId);
+
+                if ($current->acceptsVotes()) {
+                    DB::table('movie_night_votes')
+                        ->where('movie_night_id', $current->getKey())
+                        ->where('user_id', $inviteeId)
+                        ->delete();
+                }
             }
 
             $invitation->status = $status;

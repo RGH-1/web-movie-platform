@@ -25,6 +25,7 @@ use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 use App\Http\Controllers\MovieNightController;
 use App\Http\Controllers\MovieNightInvitationController;
+use App\Http\Controllers\MovieNightVotingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -123,6 +124,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/movie-nights/{movieNight}',[MovieNightController::class, 'show']);
             Route::patch('/movie-nights/{movieNight}',[MovieNightController::class, 'update']);
             Route::post('/movie-nights/{movieNight}/cancel',[MovieNightController::class, 'cancel']);
+            Route::get('/movie-nights/{movieNight}/candidates', [MovieNightVotingController::class, 'index']);
+            Route::post('/movie-nights/{movieNight}/candidates', [MovieNightVotingController::class, 'store']);
+            Route::put('/movie-nights/{movieNight}/vote', [MovieNightVotingController::class, 'vote']);
+            Route::post('/movie-nights/{movieNight}/finalize', [MovieNightVotingController::class, 'finalize']);
             Route::post('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'store']);
             Route::get('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'index'])
                 ->name('movie-nights.invitations.index');
