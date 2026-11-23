@@ -17,6 +17,10 @@ All endpoints require authentication and a complete profile.
 | POST | /api/v1/movie-nights/{id}/invitations | Organizer invites a user |
 | GET | /api/v1/movie-nights/{id}/invitations | Read invitations grouped by status |
 | PATCH | /api/v1/movie-nights/{id}/rsvp | Invitee responds to their own invitation |
+| POST | /api/v1/movie-nights/{id}/candidates | Propose a catalog movie |
+| GET | /api/v1/movie-nights/{id}/candidates | Read the shortlist and vote totals |
+| PUT | /api/v1/movie-nights/{id}/vote | Cast or replace the caller's vote |
+| POST | /api/v1/movie-nights/{id}/finalize | Organizer chooses the winner |
 
 Cancellation retains the night and its history.
 
@@ -139,6 +143,31 @@ Cancelled nights remain protected from edits and new vote/message writes.
   the invitee's string `id` and `name`, `status`, and ISO timestamps
   `created_at` and `updated_at`.
 
+## Shortlist and voting (AB#125)
+
+- During the scheduled state, the organizer and accepted participants may
+  propose any active canonical movie once per night. POST candidates accepts
+  `movie_id` from the local catalog and returns 201.
+- PUT vote accepts `candidate_id` from the same night's shortlist. Each
+  eligible voter has one ballot per night. Repeating the request or voting for
+  another candidate replaces that ballot. Declining an accepted invitation
+  while voting is open removes the vote and retains any proposals.
+- POST finalize is organizer-only. Send an empty body to finalize a sole
+  leader, or send `candidate_id` to select a leader explicitly. A tie requires
+  an explicit selection. With zero votes, all active candidates share the lead.
+  Finalization requires at least one active candidate.
+- Deactivated movies remain in the shortlist and retain their recorded votes.
+  Only active candidates can receive new votes or win.
+- Finalization saves the canonical winner and closes proposals and voting.
+  Subsequent finalization and vote requests receive 403. The shortlist remains
+  readable to authorized viewers, including after cancellation.
+- All four endpoints return the shortlist and voting summary in `data`.
+  The summary includes `status`, `voting_open`, `winning_movie_id`,
+  `viewer_candidate_id`, `total_votes`, `leading_candidate_ids`, and
+  `candidates`. Leader IDs are provided while voting is open. Each candidate
+  includes `id`, `proposed_by`, `movie` (the canonical movie summary),
+  and `vote_count`. Candidate, user, and canonical movie IDs are strings.
+
 ## Representation
 
 Every single-record response has a data object containing:
@@ -156,7 +185,7 @@ Every single-record response has a data object containing:
 - permissions.update and permissions.cancel.
 - summaries.participants.count: explicit membership-row count.
 - summaries.invitations: null. Read invitation records from the invitations endpoint.
-- summaries.shortlist: null while shortlist summaries are unavailable.
+- summaries.shortlist: null. Read shortlist and totals from the candidates endpoint.
 - created_at and updated_at: UTC ISO timestamps.
 
 Example time conversion:
@@ -189,9 +218,8 @@ updates and cancellation.
 - Do not use a TMDB ID as a movie-night or canonical winning-movie ID.
 - Treat meeting/location/description values as plain data.
 - The server does not fetch meeting URLs.
-- Future shortlist, vote, and chat features must reuse the
-  established visibility and write boundaries.
-- Vote/message permissions are not broadened by this read-access task.
+- Shortlist and vote operations reuse movie-night visibility and the
+  transactional write boundary.
 
 ## Verification
 
