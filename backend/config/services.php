@@ -45,6 +45,10 @@ return [
         'key' => env('AZURE_LANGUAGE_KEY'),
     ],
 
+    'geoapify' => [
+        'key' => env('GEOAPIFY_API_KEY'),
+    ],
+
     'weather' => [
         'weather_url' => env('OPEN_METEO_WEATHER_URL', 'https://api.open-meteo.com/v1/forecast'),
         'geocoding_url' => env('OPEN_METEO_GEOCODING_URL', 'https://geocoding-api.open-meteo.com/v1/search'),
