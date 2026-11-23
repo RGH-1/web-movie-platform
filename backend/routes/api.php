@@ -13,6 +13,7 @@ use App\Http\Controllers\MovieDetailsController;
 use App\Http\Controllers\MovieFeedController;
 use App\Http\Controllers\MovieListController;
 use App\Http\Controllers\MovieSearchController;
+use App\Http\Controllers\NearbyCinemaController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicProfileController;
@@ -61,6 +62,7 @@ Route::prefix('v1')->group(function () {
     // Routes available to any authenticated account.
     Route::middleware(['auth:sanctum', 'account.enabled'])->group(function () {
         Route::get('/feed', FollowingFeedController::class);
+        Route::get('/cinemas/nearby', NearbyCinemaController::class)->middleware('throttle:10,1,nearby-cinemas');
 
         Route::post('/users/{userId}/follow', [FollowController::class, 'store']);
         Route::delete('/users/{userId}/follow', [FollowController::class, 'destroy']);
