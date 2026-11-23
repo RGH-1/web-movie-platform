@@ -60,6 +60,7 @@ class ProfileController extends Controller
                 'favorite_genres' => $user->favorite_genres ?? [],
                 'share_activity' => $user->share_activity,
                 'has_local_password' => filled($user->password),
+                'can_access_admin' => $user->can('access-admin'),
             ],
             'meta' => [
                 'profile_complete' => $incompleteFields === [],

@@ -96,10 +96,7 @@ class PasswordController extends Controller
     {
         $user->forceFill(['password' => Hash::make($password), 'remember_token' => Str::random(60)])->save();
 
-        if (config('session.driver') === 'database') {
-            DB::connection(config('session.connection'))->table(config('session.table'))
-                ->where('user_id', $user->id)->delete();
-        }
+        $user->revokeDatabaseSessions();
     }
 
     private function logout(Request $request): void

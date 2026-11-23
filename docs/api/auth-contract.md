@@ -182,6 +182,15 @@ References: [Laravel 12 Sanctum SPA authentication](https://laravel.com/docs/12.
 
 
 
+## Administrator capability and disabled accounts — AB#152
+
+Successful password login and own-profile responses include
+`data.can_access_admin`, calculated by Laravel's administrator gate. React
+uses it for navigation. Admin endpoints authorize each request separately.
+Disabled accounts receive the generic credential failure during password
+login. Social sign-in returns `account_unavailable`. Any existing session
+for a disabled account is denied by protected API routes.
+
 ## Authenticated-user endpoint implementation — AB#22
 
 `GET /api/v1/me` returns the user associated with the current session.

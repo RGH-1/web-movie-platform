@@ -27,7 +27,7 @@ class ProfileTest extends TestCase
             ->getJson(self::URL.'?id='.$other->id)
             ->assertOk()->assertExactJson(['data' => [
                 'id' => $user->id, 'name' => $user->name,
-                'email' => $user->email, 'bio' => null, 'favorite_genres' => [], 'share_activity' => true, 'has_local_password' => true,
+                'email' => $user->email, 'bio' => null, 'favorite_genres' => [], 'share_activity' => true, 'has_local_password' => true, 'can_access_admin' => false,
             ], 'meta' => ['profile_complete' => true, 'incomplete_fields' => []]]);
     }
 
