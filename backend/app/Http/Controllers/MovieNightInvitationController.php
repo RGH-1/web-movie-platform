@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\MovieNightInvitationResource;
+use App\Http\Requests\ListMovieNightInvitationsRequest;
 use App\Models\MovieNight;
 use App\Models\MovieNightInvitation;
 use App\Services\MovieNightAccessService;
@@ -15,6 +16,26 @@ use Illuminate\Validation\ValidationException;
 
 class MovieNightInvitationController extends Controller
 {
+    public function inbox(ListMovieNightInvitationsRequest $request): JsonResponse
+    {
+        $values = $request->validated();
+        $invitations = MovieNightInvitation::query()
+            ->where('invitee_id', $request->user()->getKey())
+            ->whereHas('movieNight', fn ($nights) => $nights->where('status', '!=', MovieNight::STATUS_DRAFT))
+            ->with(['invitee:id,name', 'movieNight.organizer:id,name'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(
+                perPage: (int) ($values['per_page'] ?? 20),
+                page: (int) ($values['page'] ?? 1),
+            )
+            ->withQueryString();
+
+        return MovieNightInvitationResource::collection($invitations)
+            ->response()
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     public function store(Request $request, MovieNight $movieNight, MovieNightAccessService $access): JsonResponse
     {
         Gate::authorize('invite', $movieNight);
@@ -28,7 +49,7 @@ class MovieNightInvitationController extends Controller
 
     public function index(Request $request, MovieNight $movieNight): JsonResponse
     {
-        $invitations = $movieNight->invitations()->with('invitee:id,name')->orderBy('id');
+        $invitations = $movieNight->invitations()->with(['invitee:id,name', 'movieNight.organizer:id,name'])->orderBy('id');
         $viewAll = Gate::allows('viewAllInvitations', $movieNight);
 
         if (! $viewAll) {
@@ -74,7 +95,7 @@ class MovieNightInvitationController extends Controller
 
     private function respondWith(MovieNightInvitation $invitation, int $status = 200): JsonResponse
     {
-        return (new MovieNightInvitationResource($invitation->load('invitee:id,name')))
+        return (new MovieNightInvitationResource($invitation->load(['invitee:id,name', 'movieNight.organizer:id,name'])))
             ->response()
             ->setStatusCode($status)
             ->header('Cache-Control', 'private, no-store');

@@ -120,7 +120,7 @@ it('keeps the form on screen and associates local and server validation with fie
     fireEvent.click(screen.getByRole('button', { name: 'Save movie night' }));
     expect(screen.getByLabelText('Title')).toHaveAccessibleDescription('Enter a title.');
     expect(screen.getByLabelText('Date and time')).toHaveAttribute('aria-invalid', 'true');
-    expect(api.defaults.adapter).toHaveBeenCalledTimes(1);
+    expect(api.defaults.adapter).toHaveBeenCalledTimes(2);
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Draft title' } });
     fireEvent.change(screen.getByLabelText('Date and time'), { target: { value: '2099-12-30T20:45' } });
@@ -147,7 +147,7 @@ it('shows participant details without organizer controls, and gives unavailable 
         .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add movie night to calendar' }))
         .toBeEnabled();
-    expect(screen.getAllByText('Unavailable')).toHaveLength(3);
+    expect(screen.getAllByText('Unavailable')).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Edit movie night' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancel movie night' })).not.toBeInTheDocument();
 });
@@ -176,4 +176,273 @@ it('uses the same safe message for a missing or inaccessible movie-night ID', as
     open(detailsPath);
     expect(await screen.findByRole('alert')).toHaveTextContent('Movie night not found or unavailable to your account.');
     expect(screen.queryByRole('button', { name: 'Edit movie night' })).not.toBeInTheDocument();
+});
+
+const invitationPreview = {
+    id: '17', movie_night_id: id, inviter_id: '4', status: 'pending',
+    invitee: { id: '9', name: 'Avery' },
+    movie_night_preview: {
+        id, title: 'Friday movie night', starts_at: '2099-12-30T18:00:00.000000Z', timezone: 'Asia/Beirut',
+        location: 'Campus lounge', description: 'Bring snacks.', meeting_url: 'https://example.com/meet', status: 'scheduled',
+        organizer: { id: '4', name: 'Morgan' },
+    },
+};
+
+function invitationGroups(invitation = invitationPreview) {
+    return { pending: invitation.status === 'pending' ? [invitation] : [], accepted: invitation.status === 'accepted' ? [invitation] : [], declined: invitation.status === 'declined' ? [invitation] : [] };
+}
+
+it('renders the complete, limited preview for a pending invitation', async () => {
+    api.defaults.adapter = async (config) => {
+        if (config.url === apiPath) return reject(config, 404);
+        if (config.url === `${apiPath}/invitations`) return response(config, { data: invitationGroups() });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+
+    expect(await screen.findByRole('heading', { name: 'Friday movie night' })).toBeInTheDocument();
+    expect(screen.getByText('Morgan', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.getByRole('time')).toHaveAttribute('dateTime', invitationPreview.movie_night_preview.starts_at);
+    expect(screen.getByText('Campus lounge')).toBeInTheDocument();
+    expect(screen.getByText('Bring snacks.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open meeting link' })).toHaveAttribute('href', 'https://example.com/meet');
+    expect(screen.queryByText('Shortlist and voting')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loading movie night…')).not.toBeInTheDocument();
+});
+
+it.each([
+    ['accepted', 'Accept invitation', 'Decline'],
+    ['declined', 'Decline', 'Accept invitation'],
+])('does not show a redundant %s preview action', async (rsvpStatus, hiddenAction, availableAction) => {
+    const invitation = { ...invitationPreview, status: rsvpStatus };
+    api.defaults.adapter = async (config) => {
+        if (config.url === apiPath) return reject(config, 404);
+        if (config.url === `${apiPath}/invitations`) return response(config, { data: invitationGroups(invitation) });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    await screen.findByRole('heading', { name: 'Friday movie night' });
+    expect(screen.queryByRole('button', { name: hiddenAction })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: availableAction })).toBeInTheDocument();
+});
+
+it('loads full details after accepting an invitation', async () => {
+    let invitation = invitationPreview;
+    let accepted = false;
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath && config.method === 'get') return accepted
+            ? response(config, { data: { ...draft, status: 'scheduled', viewer_role: 'participant', permissions: { update: false, cancel: false } } })
+            : reject(config, 404);
+        if (config.url === `${apiPath}/invitations` && config.method === 'get') return response(config, { data: invitationGroups(invitation) });
+        if (config.url === `${apiPath}/rsvp`) {
+            const status = JSON.parse(config.data).status;
+            invitation = { ...invitation, status };
+            accepted = status === 'accepted';
+            return response(config, { data: invitation });
+        }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Accept invitation' }));
+    expect(await screen.findByRole('heading', { name: draft.title })).toBeInTheDocument();
+    expect(screen.queryByText('Campus lounge')).not.toBeInTheDocument();
+});
+
+it('keeps the limited preview visible after declining an invitation', async () => {
+    let invitation = invitationPreview;
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath) return reject(config, 404);
+        if (config.url === `${apiPath}/invitations` && config.method === 'get') return response(config, { data: invitationGroups(invitation) });
+        if (config.url === `${apiPath}/rsvp`) { invitation = { ...invitation, status: JSON.parse(config.data).status }; return response(config, { data: invitation }); }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Decline' }));
+    expect(await screen.findByText('Invitation: declined', { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Friday movie night' })).toBeInTheDocument();
+    expect(screen.queryByText('Event details')).not.toBeInTheDocument();
+});
+
+it('does not expose a private invitation preview to an unrelated user', async () => {
+    api.defaults.adapter = async (config) => reject(config, 404);
+    open(detailsPath);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Movie night not found or unavailable to your account.');
+    expect(screen.queryByText('Friday movie night')).not.toBeInTheDocument();
+    expect(screen.queryByText('Campus lounge')).not.toBeInTheDocument();
+});
+
+it('lets an organizer invite a follower and inspect invitation statuses', async () => {
+    const accepted = { ...invitationPreview, id: '18', status: 'accepted', invitee: { id: '10', name: 'Rae' } };
+    let groups = { ...invitationGroups(), accepted: [accepted], declined: [] };
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath) return response(config, { data: { ...draft, status: 'scheduled' } });
+        if (config.url === `${apiPath}/invitations` && config.method === 'get') return response(config, { data: groups });
+        if (config.url === `${apiPath}/invitations` && config.method === 'post') {
+            expect(JSON.parse(config.data)).toEqual({ invitee_id: '11' });
+            groups = { ...groups, pending: [...groups.pending, { ...invitationPreview, id: '19', invitee: { id: '11', name: 'Taylor' } }] };
+            return response(config, { data: groups.pending.at(-1) }, 201);
+        }
+        if (config.url === '/v1/users/4/following' || config.url === '/v1/users/4/followers') return response(config, { data: [], meta: { current_page: 1, last_page: 1 } });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Invitations' }));
+    expect(await screen.findByText('Avery')).toBeInTheDocument();
+    expect(screen.getByText('Rae')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Or invite exact user ID'), { target: { value: '11' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Invite' }));
+    expect(await screen.findByText('Taylor')).toBeInTheDocument();
+});
+
+it('lets a participant propose a canonical catalog movie', async () => {
+    const participant = { ...draft, status: 'scheduled', viewer_role: 'participant', permissions: { update: false, cancel: false } };
+    const empty = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: 0, leading_candidate_ids: [], candidates: [] };
+    const proposed = { ...empty, candidates: [{ id: '22', vote_count: 0, movie: { local_movie_id: '42', title: 'Canonical movie', is_active: true } }] };
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath) return response(config, { data: participant });
+        if (config.url === `${apiPath}/candidates` && config.method === 'get') return response(config, { data: empty });
+        if (config.url === '/v1/catalog/movies') return response(config, { data: [{ local_movie_id: '42', title: 'Canonical movie' }], meta: { current_page: 1, last_page: 1 } });
+        if (config.url === `${apiPath}/candidates` && config.method === 'post') { expect(JSON.parse(config.data)).toEqual({ movie_id: '42' }); return response(config, { data: proposed }, 201); }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
+    await screen.findByText('No movies have been proposed.');
+    fireEvent.change(screen.getByLabelText('Propose a catalog movie'), { target: { value: 'canonical' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Propose' }));
+    expect(await screen.findByRole('button', { name: 'Vote' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Propose a catalog movie')).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Propose' })).not.toBeInTheDocument();
+});
+
+it('explains when a catalog search has no matching movies', async () => {
+    const participant = { ...draft, status: 'scheduled', viewer_role: 'participant', permissions: { update: false, cancel: false } };
+    const summary = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: 0, leading_candidate_ids: [], candidates: [] };
+    api.defaults.adapter = async (config) => {
+        if (config.url === apiPath) return response(config, { data: participant });
+        if (config.url === `${apiPath}/candidates`) return response(config, { data: summary });
+        if (config.url === '/v1/catalog/movies') return response(config, { data: [], meta: { current_page: 1, last_page: 1 } });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
+    await screen.findByText('No movies have been proposed.');
+    fireEvent.change(screen.getByLabelText('Propose a catalog movie'), { target: { value: 'nothing' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(await screen.findByText('No matching movies found.')).toBeInTheDocument();
+});
+
+it('shows vote totals and the selected ballot after a participant changes vote', async () => {
+    const participant = { ...draft, status: 'scheduled', viewer_role: 'participant', permissions: { update: false, cancel: false } };
+    const first = { id: '22', vote_count: 3, movie: { local_movie_id: '42', title: 'First movie', is_active: true } };
+    const second = { id: '23', vote_count: 2, movie: { local_movie_id: '43', title: 'Second movie', is_active: true } };
+    let summary = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: 5, leading_candidate_ids: ['22'], candidates: [first, second] };
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath) return response(config, { data: participant });
+        if (config.url === `${apiPath}/candidates` && config.method === 'get') return response(config, { data: summary });
+        if (config.url === `${apiPath}/vote`) { const candidateId = JSON.parse(config.data).candidate_id; summary = { ...summary, viewer_candidate_id: candidateId, total_votes: 6, candidates: summary.candidates.map((c) => ({ ...c, vote_count: c.id === candidateId ? 4 : 2 })) }; return response(config, { data: summary }); }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
+    expect(await screen.findByText('5 total votes')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Vote' })[1]);
+    expect(await screen.findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
+    expect(screen.getByText('6 total votes')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Finalize/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Vote' }));
+    expect(await screen.findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
+});
+
+it('allows organizers to finalize only a sole leader, or explicitly choose a tied winner', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const sole = { id: '22', vote_count: 4, movie: { local_movie_id: '42', title: 'Leader', is_active: true } };
+    const tied = { id: '23', vote_count: 4, movie: { local_movie_id: '43', title: 'Tied leader', is_active: true } };
+    let summary = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: 8, leading_candidate_ids: ['22'], candidates: [sole, tied] };
+    const payloads = [];
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === apiPath) return response(config, { data: { ...draft, status: 'scheduled' } });
+        if (config.url === `${apiPath}/candidates` && config.method === 'get') return response(config, { data: summary });
+        if (config.url === `${apiPath}/finalize`) { payloads.push(JSON.parse(config.data)); summary = { ...summary, winning_movie_id: payloads.length === 1 ? '42' : '43', voting_open: false }; return response(config, { data: summary }); }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Finalize Leader' }));
+    await screen.findByText('Winner finalized.');
+    expect(payloads[0]).toEqual({});
+
+    summary = { ...summary, voting_open: true, winning_movie_id: null, leading_candidate_ids: ['22', '23'] };
+    fireEvent.click(screen.getByRole('button', { name: 'Shortlist and voting' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Shortlist and voting' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Finalize Tied leader' }));
+    await screen.findByText('Winner finalized.');
+    expect(payloads[1]).toEqual({ candidate_id: '23' });
+});
+
+it.each(['draft', 'finalized', 'cancelled'])('%s events prevent shortlist actions', async (status) => {
+    const participant = { ...draft, status, viewer_role: 'participant', permissions: { update: false, cancel: false } };
+    const summary = { status, voting_open: false, winning_movie_id: status === 'finalized' ? '42' : null, viewer_candidate_id: null, total_votes: 0, leading_candidate_ids: ['22'], candidates: [{ id: '22', vote_count: 0, movie: { local_movie_id: '42', title: 'Movie', is_active: true } }] };
+    api.defaults.adapter = async (config) => {
+        if (config.url === apiPath) return response(config, { data: participant });
+        if (config.url === `${apiPath}/candidates`) return response(config, { data: summary });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open(detailsPath);
+    fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
+    expect(await screen.findByText('Movie')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Vote' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Finalize/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+});
+
+it('shows the invitation inbox, updates RSVP history, and refreshes My Events', async () => {
+    let accepted = false;
+    const received = {
+        ...invitationPreview,
+        movie_night_preview: { ...invitationPreview.movie_night_preview, title: 'Inbox movie night' },
+    };
+    api.defaults.adapter = async (config) => {
+        if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
+        if (config.url === '/v1/movie-nights') return response(config, {
+            data: accepted ? [{ ...draft, status: 'scheduled', title: 'Inbox movie night', viewer_role: 'participant', permissions: { update: false, cancel: false } }] : [],
+            meta: { current_page: 1, last_page: 1 },
+        });
+        if (config.url === '/v1/me/movie-night-invitations') return response(config, {
+            data: [{ ...received, status: accepted ? 'accepted' : 'pending' }],
+            meta: { current_page: 1, last_page: 1, total: 1 },
+        });
+        if (config.url === `${apiPath}/rsvp`) { accepted = JSON.parse(config.data).status === 'accepted'; return response(config, { data: { ...received, status: 'accepted' } }); }
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open();
+    fireEvent.click(await screen.findByRole('tab', { name: 'My Invitations (1)' }));
+    expect(await screen.findByRole('heading', { name: 'Inbox movie night' })).toBeInTheDocument();
+    expect(screen.getByText('Invited by Morgan')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    expect(await screen.findByRole('link', { name: 'View Movie Night' })).toHaveAttribute('href', detailsPath);
+    fireEvent.click(screen.getByRole('tab', { name: 'My Events' }));
+    expect(await screen.findByRole('link', { name: 'Inbox movie night' })).toHaveAttribute('href', detailsPath);
+});
+
+it('keeps cancelled invitations visible but read-only in invitation history', async () => {
+    const cancelled = { ...invitationPreview, status: 'declined', movie_night_preview: { ...invitationPreview.movie_night_preview, status: 'cancelled' } };
+    api.defaults.adapter = async (config) => {
+        if (config.url === '/v1/movie-nights') return response(config, { data: [], meta: { current_page: 1, last_page: 1 } });
+        if (config.url === '/v1/me/movie-night-invitations') return response(config, { data: [cancelled], meta: { current_page: 1, last_page: 1, total: 1 } });
+        throw new Error(`Unexpected request: ${config.method} ${config.url}`);
+    };
+    open();
+    fireEvent.click(await screen.findByRole('tab', { name: 'My Invitations (0)' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Declined' }));
+    expect(await screen.findByText('Event: Cancelled (read-only)')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
 });
