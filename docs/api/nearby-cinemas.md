@@ -8,6 +8,16 @@
 
 [Geoapify Places documentation](https://apidocs.geoapify.com/docs/places/)
 
+## Nearby cinemas map (AB#139)
+
+Sign in and select **Nearby cinemas** on the home page, or open `/cinemas/nearby`.
+
+- Select **Use my location** to request browser location permission and search within 10 km. If permission is denied, enter a city and country, such as `Beirut, Lebanon`.
+- Manual city search uses the existing recommendations city lookup, which requires a completed profile.
+- The map pins and the list use the same Laravel results. **Directions** opens the selected cinema's coordinates in Google Maps.
+- Leaflet displays OpenStreetMap tiles. The map credits OpenStreetMap contributors and Geoapify.
+- Cinema listings depend on Geoapify's coverage and classification. A venue may be missing or categorized incorrectly in the provider's data.
+
 ## API contract
 
 `GET /api/v1/cinemas/nearby` requires a signed-in, enabled account. All three query parameters are required.

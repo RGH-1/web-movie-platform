@@ -25,6 +25,7 @@ import AdminReviewsPage from "./pages/AdminReviewsPage";
 import MyMovieNightsPage from "./pages/MyMovieNightsPage";
 import MovieNightDetailsPage from "./pages/MovieNightDetailsPage";
 import RecommendationsPage from "./pages/RecommendationsPage";
+import NearbyCinemasPage from "./pages/NearbyCinemasPage";
 import UserRelationshipListPage from "./pages/UserRelationshipListPage";
 
 import { useAuth } from "./hooks/useAuth";
@@ -69,6 +70,9 @@ function Home() {
                             className="btn btn-outline-primary"
                         >
                             Recommendations
+                        </Link>
+                        <Link to="/cinemas/nearby" className="btn btn-outline-primary">
+                            Nearby cinemas
                         </Link>
                         <Link
                             to="/my-lists"
@@ -163,6 +167,7 @@ function App() {
                     path="/recommendations"
                     element={<RecommendationsPage />}
                 />
+                <Route path="/cinemas/nearby" element={<NearbyCinemasPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route
                     path="/account/password"
