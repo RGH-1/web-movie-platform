@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\MovieNight;
 use App\Policies\MovieNightPolicy;
 use App\Policies\ReviewPolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -71,9 +72,17 @@ class AppServiceProvider extends ServiceProvider
 
             abort_if($actor === null, 401, 'Unauthenticated.');
 
-            $night = MovieNight::query()
-                ->visibleTo($actor)
-                ->find($id);
+            $night = MovieNight::query()->where(function (Builder $query) use ($actor): void {
+                $query->visibleTo($actor);
+
+                if (request()->routeIs('movie-nights.invitations.index', 'movie-nights.rsvp')) {
+                    $query->orWhere(function (Builder $invited) use ($actor): void {
+                        $invited->where('status', '!=', MovieNight::STATUS_DRAFT)
+                            ->whereHas('invitations', fn (Builder $invitations) => $invitations
+                                ->where('invitee_id', $actor->getKey()));
+                    });
+                }
+            })->find($id);
 
             abort_if($night === null, 404, 'Movie night not found.');
 

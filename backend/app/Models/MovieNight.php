@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Throwable;
 
 class MovieNight extends Model
@@ -265,6 +266,11 @@ class MovieNight extends Model
         ], true);
     }
 
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(MovieNightInvitation::class);
+    }
 
     public function participants(): BelongsToMany
     {
