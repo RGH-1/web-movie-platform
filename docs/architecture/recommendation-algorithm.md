@@ -36,7 +36,8 @@ heuristics. They are not learned preferences or predictions of enjoyment.
 Ignore hidden reviews when constructing rating-derived preferences and
 community aggregates.
 
-The share_activity setting governs activity sharing. Recommendations use
+The master and category sharing preferences govern public-profile and
+following-feed activity. Recommendations use
 the requesting user's own data and do not expose another user's history.
 
 Sentiment classification is not a scoring input in weighted-v1.
