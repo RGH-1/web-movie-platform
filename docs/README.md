@@ -45,3 +45,4 @@ Record decisions as the team makes them. Avoid documenting unconfirmed assumptio
 - [Movie-night management API (AB#121)](api/movie-nights-contract.md)
 - [My Movie Nights planner (AB#122)](frontend/movie-nights.md)
 - [Favorite genre preferences (AB#115)](frontend/favorite-genre-preferences.md)
+- [Calendar export and frontend actions (AB#144)](frontend/calendar-export.md)
