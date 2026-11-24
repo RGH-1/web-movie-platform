@@ -2,6 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { subscribeToMovieNight } from '../services/movieNightBroadcast';
 import { getMovieNightMessages, sendMovieNightMessage } from '../services/movieNights';
 
+const connectionLabels = {
+    connecting: 'Connecting to live chat…',
+    live: 'Live chat connected.',
+    unavailable: 'Live updates are unavailable. You can reload messages manually.',
+};
+
+const messageTime = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
 function compareIds(left, right) {
     return left.length - right.length || left.localeCompare(right);
 }
@@ -19,7 +30,7 @@ export default function MovieNightMessages({ nightId, canSend }) {
     const [sending, setSending] = useState(false);
     const [readError, setReadError] = useState('');
     const [sendError, setSendError] = useState('');
-    const [liveError, setLiveError] = useState(false);
+    const [connection, setConnection] = useState('connecting');
     const room = useRef(null);
 
     useEffect(() => {
@@ -71,14 +82,11 @@ export default function MovieNightMessages({ nightId, canSend }) {
         }
 
         room.current = { refresh, signal };
-        const leave = subscribeToMovieNight(nightId, () => {
-            if (signal.aborted) return;
-            setLiveError(false);
-            void refresh();
-        }, () => {
-            if (signal.aborted) return;
-            setLiveError(true);
-            void refresh();
+        const leave = subscribeToMovieNight(nightId, {
+            refresh,
+            onStatus: (status) => {
+                if (!signal.aborted) setConnection(status);
+            },
         }, signal);
         void refresh();
 
@@ -101,8 +109,12 @@ export default function MovieNightMessages({ nightId, canSend }) {
             setMessages((current) => mergeMessages(current, [message]));
             setText('');
             void refresh();
-        } catch {
-            if (!signal.aborted) setSendError('Could not send the message. Please try again.');
+        } catch (error) {
+            if (!signal.aborted) {
+                setSendError(error.response?.status === 429
+                    ? 'Too many messages. Wait a minute and try again.'
+                    : 'Could not send the message. Please try again.');
+            }
         } finally {
             if (!signal.aborted) setSending(false);
         }
@@ -113,22 +125,28 @@ export default function MovieNightMessages({ nightId, canSend }) {
             <div className="card-body">
                 <h2 id="room-messages-heading" className="h5">Room messages</h2>
                 {loading && <p role="status">Loading messages…</p>}
-                {liveError && <p role="status">Live updates are unavailable.</p>}
+                <p className="small text-body-secondary" role="status">{connectionLabels[connection]}</p>
                 {readError && <p role="alert">{readError}</p>}
-                {(liveError || readError) && (
+                {(connection === 'unavailable' || readError) && (
                     <button type="button" className="btn btn-outline-secondary btn-sm mb-2"
                         onClick={() => void room.current.refresh()}>Reload messages</button>
                 )}
                 {!loading && !readError && messages.length === 0 && <p>No messages yet.</p>}
-                <ul className="list-group mb-3" aria-live="polite">
+                <ol className="list-group mb-3" aria-live="polite">
                     {messages.map((message) => (
                         <li key={message.id} className="list-group-item text-break">
+                            <div className="d-flex flex-wrap justify-content-between gap-2 mb-1">
+                                <strong>{message.sender_name || 'Unknown sender'}</strong>
+                                <time className="small text-body-secondary" dateTime={message.created_at}>
+                                    {messageTime.format(new Date(message.created_at))}
+                                </time>
+                            </div>
                             {message.is_spoiler
                                 ? <details><summary>Spoiler</summary>{message.text}</details>
-                                : message.text}
+                                : <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>}
                         </li>
                     ))}
-                </ul>
+                </ol>
                 {canSend && (
                     <form onSubmit={submit}>
                         <label htmlFor="room-message" className="form-label">Message</label>

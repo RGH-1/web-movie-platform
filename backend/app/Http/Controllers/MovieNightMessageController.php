@@ -18,7 +18,7 @@ class MovieNightMessageController extends Controller
         $messages = $access->forViewing(
             $request->user(),
             $movieNight,
-            fn (MovieNight $night) => $night->messages()->orderByDesc('id')->cursorPaginate(50),
+            fn (MovieNight $night) => $night->messages()->with('sender:id,name')->orderByDesc('id')->cursorPaginate(50),
         );
 
         return MovieNightMessageResource::collection($messages)->response()
@@ -54,7 +54,7 @@ class MovieNightMessageController extends Controller
             return $message;
         });
 
-        return (new MovieNightMessageResource($message))->response()
+        return (new MovieNightMessageResource($message->setRelation('sender', $sender)))->response()
             ->setStatusCode(201)
             ->header('Cache-Control', 'private, no-store');
     }
