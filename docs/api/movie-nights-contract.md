@@ -140,8 +140,8 @@ the room is scheduled or finalized and can still read history after cancellation
 
 A successful send returns `201` with the saved message under `data`. History
 uses the same message shape, including string `id`, `movie_night_id`, and
-`sender_id`, the submitted fields, and ISO 8601 `created_at` and
-`updated_at` timestamps.
+`sender_id`, the sender's display name in `sender_name`, the submitted fields,
+and ISO 8601 `created_at` and `updated_at` timestamps.
 
 ## Invitations and RSVP (AB#124)
 
