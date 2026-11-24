@@ -72,8 +72,7 @@ class MovieNightPolicy
 
     public function sendMessage(User $user, MovieNight $night): bool
     {
-        return $this->organizes($user, $night)
-            && $night->acceptsMessages();
+        return $night->acceptsMessages() && $this->view($user, $night);
     }
 
     private function organizes(User $user, MovieNight $night): bool

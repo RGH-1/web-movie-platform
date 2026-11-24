@@ -47,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('passwords', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
         RateLimiter::for('recommendations', fn (Request $request) => Limit::perMinute(10)->by((string) $request->user()?->id ?: $request->ip()));
+        RateLimiter::for('movie-night-message-sends', fn (Request $request) => Limit::perMinute(20)->by((string) $request->user()->getKey()));
 
         Route::bind('review', static function (string $value): Review {
             $id = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);

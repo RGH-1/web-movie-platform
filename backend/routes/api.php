@@ -26,6 +26,7 @@ use App\Http\Controllers\UserMovieStatusController;
 use App\Http\Middleware\RejectAuthenticatedRegistration;
 use App\Http\Controllers\MovieNightController;
 use App\Http\Controllers\MovieNightInvitationController;
+use App\Http\Controllers\MovieNightMessageController;
 use App\Http\Controllers\MovieNightVotingController;
 use App\Http\Controllers\MovieNightVideoController;
 use Illuminate\Support\Facades\Route;
@@ -137,6 +138,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/movie-nights/{movieNight}/video', [MovieNightVideoController::class, 'assign']);
             Route::get('/movie-nights/{movieNight}/video', [MovieNightVideoController::class, 'show']);
             Route::get('/movie-nights/{movieNight}/video/stream', [MovieNightVideoController::class, 'stream']);
+            Route::get('/movie-nights/{movieNight}/messages', [MovieNightMessageController::class, 'index']);
+            Route::post('/movie-nights/{movieNight}/messages', [MovieNightMessageController::class, 'store'])
+                ->middleware('throttle:movie-night-message-sends');
             Route::post('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'store']);
             Route::get('/movie-nights/{movieNight}/invitations', [MovieNightInvitationController::class, 'index'])
                 ->name('movie-nights.invitations.index');
