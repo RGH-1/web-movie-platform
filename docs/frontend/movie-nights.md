@@ -10,9 +10,8 @@ and the device's named time zone. Details display the time in the saved
 event time zone. Editing another field leaves the stored instant intact,
 including its seconds. A scheduled night cannot return to draft.
 
-The existing API exposes a confirmed participant count. Individual invitees,
-RSVP, voting, and watch room depend on separate features and retain
-unavailable entry points.
+The API exposes a confirmed participant count. The movie night details page
+links to the watch room when the event has reached the appropriate status.
 
 AB#144 enables calendar export for scheduled and finalized nights.
 Each download refetches authorized details before generating the file.
@@ -20,6 +19,50 @@ Export is disabled during editing/cancellation, and organizer mutations
 are disabled while the export refresh is pending.
 
 See [Calendar export](calendar-export.md) for behavior and verification.
+
+## Live watch room messages
+
+Install backend and frontend dependencies with `composer install` in
+`backend` and `npm ci` in `frontend`. Copy the Reverb settings from each
+directory’s `.env.example` into its local `.env`. Run `php artisan config:clear`
+and `php artisan migrate` in `backend`.
+
+Use a separate terminal for each process.
+
+| Directory | Command |
+| --- | --- |
+| `backend` | `php artisan serve --host=localhost --port=8000` |
+| `backend` | `php artisan reverb:start` |
+| `frontend` | `npm run dev` |
+
+Open the frontend at `http://localhost:5173` so its origin matches
+`FRONTEND_URL` and the host is covered by `SANCTUM_STATEFUL_DOMAINS`.
+`REVERB_SERVER_HOST` and `REVERB_SERVER_PORT` control where Reverb listens.
+`REVERB_HOST`, `REVERB_PORT`, and `REVERB_SCHEME` tell Laravel how to reach it.
+The matching `VITE_REVERB_*` values tell the browser how to connect. Keep the
+Vite app key equal to `REVERB_APP_KEY` and keep `REVERB_APP_SECRET` on the
+server. The example credentials are for local development. Restart Reverb
+and Vite after changing their environment settings.
+
+The watch room subscribes through `POST /api/v1/broadcasting/auth` using its
+Sanctum session. Reverb notifies subscribers after a message commits, and the
+browser loads the message through the existing participant-authorized REST
+endpoint. A queue worker is unnecessary for these notifications. After
+resubscribing, the browser follows the message cursors until it reaches the
+last synchronized ID and merges results by ID.
+
+1. Open the same scheduled or finalized watch room in two browser profiles
+   signed in as the organizer and an accepted participant. Send a message
+   in each profile and check that it appears once in both without reloading.
+2. Take the participant browser offline with developer tools, send messages
+   from the organizer, and bring the participant browser back online.
+   Confirm the missed messages appear once and new messages still arrive live.
+3. With a third, signed-in nonparticipant, verify the watch room is inaccessible.
+   Post `channel_name=private-movie-nights.<id>` and a socket ID such as
+   `socket_id=123.456` to the authorization endpoint. Include the session
+   cookies and the URL-decoded `XSRF-TOKEN` cookie value in the
+   `X-XSRF-TOKEN` header. The request returns `403`. A guest with a valid
+   CSRF token receives `401`.
 
 ## Manual verification
 

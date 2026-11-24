@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', [
+        'prefix' => 'api/v1',
+        'middleware' => ['api', 'auth:sanctum', 'account.enabled', 'profile.complete'],
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
         $middleware->redirectGuestsTo(
