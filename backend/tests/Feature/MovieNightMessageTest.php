@@ -29,6 +29,7 @@ class MovieNightMessageTest extends TestCase
         $this->actingAs($night->organizer, 'web');
         $first = $this->postJson($url, ['text' => 'Welcome'])
             ->assertCreated()
+            ->assertJsonPath('data.sender_name', $night->organizer->name)
             ->assertJsonPath('data.video_timestamp_seconds', null)
             ->assertJsonPath('data.is_spoiler', false)
             ->json('data');
@@ -42,6 +43,8 @@ class MovieNightMessageTest extends TestCase
             'sender_id' => $night->organizer_id,
         ])->assertCreated()
             ->assertJsonPath('data.sender_id', (string) $participant->id)
+            ->assertJsonPath('data.sender_name', $participant->name)
+            ->assertJsonMissingPath('data.sender.email')
             ->assertJsonPath('data.video_timestamp_seconds', 89.5)
             ->assertJsonPath('data.is_spoiler', true)
             ->assertJsonStructure(['data' => ['id', 'created_at', 'updated_at']])
