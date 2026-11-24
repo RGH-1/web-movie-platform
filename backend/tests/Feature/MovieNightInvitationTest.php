@@ -31,6 +31,7 @@ class MovieNightInvitationTest extends TestCase
         $this->postJson("$url/invitations", ['invitee_id' => $secondInvitee->id])->assertCreated();
         $this->postJson("$url/invitations", ['invitee_id' => $invitee->id])
             ->assertUnprocessable()->assertJsonValidationErrors('invitee_id');
+        $this->assertDatabaseCount('movie_night_invitations', 2);
 
         $this->signIn($invitee);
         $this->getJson($url)->assertNotFound();
@@ -43,6 +44,7 @@ class MovieNightInvitationTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('status');
         $this->patchJson("$url/rsvp", ['status' => 'accepted', 'invitee_id' => $secondInvitee->id])
             ->assertUnprocessable()->assertJsonValidationErrors('invitee_id');
+        $this->assertDatabaseCount('movie_night_participants', 0);
         $this->patchJson("$url/rsvp", ['status' => 'accepted'])->assertOk();
         $this->patchJson("$url/rsvp", ['status' => 'accepted'])->assertOk();
         $this->getJson($url)->assertOk();
@@ -67,6 +69,15 @@ class MovieNightInvitationTest extends TestCase
             'invitee_id' => $invitee->id,
             'status' => 'declined',
         ]);
+
+        $this->patchJson("$url/rsvp", ['status' => 'accepted'])
+            ->assertOk()->assertJsonPath('data.status', 'accepted');
+        $this->getJson($url)->assertOk();
+        $this->assertDatabaseHas('movie_night_participants', [
+            'movie_night_id' => $night->id,
+            'user_id' => $invitee->id,
+        ]);
+        $this->assertDatabaseCount('movie_night_participants', 1);
     }
 
     public function test_access_is_private_and_cancelled_invitations_are_read_only(): void
@@ -92,6 +103,7 @@ class MovieNightInvitationTest extends TestCase
         $this->signIn($outsider);
         $this->getJson("$url/invitations")->assertNotFound();
         $this->patchJson("$url/rsvp", ['status' => 'accepted'])->assertNotFound();
+        $this->assertDatabaseCount('movie_night_participants', 0);
 
         $night->participants()->attach($outsider);
         $this->getJson("$url/invitations")->assertNotFound();

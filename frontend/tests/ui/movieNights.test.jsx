@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { AxiosError } from 'axios';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -30,6 +30,7 @@ const draft = {
 afterEach(() => {
     api.defaults.adapter = originalAdapter;
     vi.clearAllMocks();
+    vi.restoreAllMocks();
 });
 
 function open(path = '/movie-nights', signedIn = true) {
@@ -346,45 +347,76 @@ it('shows vote totals and the selected ballot after a participant changes vote',
         if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
         if (config.url === apiPath) return response(config, { data: participant });
         if (config.url === `${apiPath}/candidates` && config.method === 'get') return response(config, { data: summary });
-        if (config.url === `${apiPath}/vote`) { const candidateId = JSON.parse(config.data).candidate_id; summary = { ...summary, viewer_candidate_id: candidateId, total_votes: 6, candidates: summary.candidates.map((c) => ({ ...c, vote_count: c.id === candidateId ? 4 : 2 })) }; return response(config, { data: summary }); }
+        if (config.url === `${apiPath}/vote` && config.method === 'put') {
+            const candidateId = JSON.parse(config.data).candidate_id;
+            summary = {
+                ...summary,
+                viewer_candidate_id: candidateId,
+                total_votes: 6,
+                candidates: [first, second].map((candidate) => ({
+                    ...candidate,
+                    vote_count: candidate.vote_count + Number(candidate.id === candidateId),
+                })),
+            };
+            return response(config, { data: summary });
+        }
         throw new Error(`Unexpected request: ${config.method} ${config.url}`);
     };
     open(detailsPath);
     fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
     expect(await screen.findByText('5 total votes')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Vote' })[1]);
-    expect(await screen.findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
+    const firstRow = screen.getByText('First movie').closest('.list-group-item');
+    const secondRow = screen.getByText('Second movie').closest('.list-group-item');
+    fireEvent.click(within(secondRow).getByRole('button', { name: 'Vote' }));
+    expect(await within(secondRow).findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
     expect(screen.getByText('6 total votes')).toBeInTheDocument();
+    expect(firstRow).toHaveTextContent('First movie · 3 votes');
+    expect(secondRow).toHaveTextContent('Second movie · 3 votes');
     expect(screen.queryByRole('button', { name: /Finalize/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Vote' }));
-    expect(await screen.findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
+    fireEvent.click(within(firstRow).getByRole('button', { name: 'Vote' }));
+    expect(await within(firstRow).findByRole('button', { name: 'Your vote' })).toBeInTheDocument();
+    expect(within(secondRow).getByRole('button', { name: 'Vote' })).toBeInTheDocument();
+    expect(screen.getByText('6 total votes')).toBeInTheDocument();
+    expect(firstRow).toHaveTextContent('First movie · 4 votes');
+    expect(secondRow).toHaveTextContent('Second movie · 2 votes');
 });
 
-it('allows organizers to finalize only a sole leader, or explicitly choose a tied winner', async () => {
+it.each([
+    { scenario: 'a sole leader', secondCount: 2, leaders: ['22'], winnerId: '22', payload: {} },
+    { scenario: 'a tied leader', secondCount: 4, leaders: ['22', '23'], winnerId: '23', payload: { candidate_id: '23' } },
+])('shows the winner and totals after an organizer finalizes $scenario', async ({ secondCount, leaders, winnerId, payload }) => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const sole = { id: '22', vote_count: 4, movie: { local_movie_id: '42', title: 'Leader', is_active: true } };
-    const tied = { id: '23', vote_count: 4, movie: { local_movie_id: '43', title: 'Tied leader', is_active: true } };
-    let summary = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: 8, leading_candidate_ids: ['22'], candidates: [sole, tied] };
-    const payloads = [];
+    const first = { id: '22', vote_count: 4, movie: { local_movie_id: '42', title: 'First movie', is_active: true } };
+    const second = { id: '23', vote_count: secondCount, movie: { local_movie_id: '43', title: 'Second movie', is_active: true } };
+    const candidates = [first, second];
+    const winner = candidates.find((candidate) => candidate.id === winnerId).movie;
+    const totalVotes = 4 + secondCount;
+    let night = { ...draft, status: 'scheduled' };
+    let summary = { status: 'scheduled', voting_open: true, winning_movie_id: null, viewer_candidate_id: null, total_votes: totalVotes, leading_candidate_ids: leaders, candidates };
     api.defaults.adapter = async (config) => {
         if (config.url.endsWith('/sanctum/csrf-cookie')) return response(config, null, 204);
-        if (config.url === apiPath) return response(config, { data: { ...draft, status: 'scheduled' } });
+        if (config.url === apiPath && config.method === 'get') return response(config, { data: night });
         if (config.url === `${apiPath}/candidates` && config.method === 'get') return response(config, { data: summary });
-        if (config.url === `${apiPath}/finalize`) { payloads.push(JSON.parse(config.data)); summary = { ...summary, winning_movie_id: payloads.length === 1 ? '42' : '43', voting_open: false }; return response(config, { data: summary }); }
+        if (config.url === `${apiPath}/finalize` && config.method === 'post') {
+            expect(JSON.parse(config.data)).toEqual(payload);
+            night = { ...night, status: 'finalized', winning_movie_id: winner.local_movie_id, winning_movie: winner };
+            summary = { ...summary, status: 'finalized', winning_movie_id: winner.local_movie_id, voting_open: false, leading_candidate_ids: [] };
+            return response(config, { data: summary });
+        }
         throw new Error(`Unexpected request: ${config.method} ${config.url}`);
     };
     open(detailsPath);
     fireEvent.click(await screen.findByRole('button', { name: 'Shortlist and voting' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Finalize Leader' }));
-    await screen.findByText('Winner finalized.');
-    expect(payloads[0]).toEqual({});
-
-    summary = { ...summary, voting_open: true, winning_movie_id: null, leading_candidate_ids: ['22', '23'] };
-    fireEvent.click(screen.getByRole('button', { name: 'Shortlist and voting' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Shortlist and voting' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Finalize Tied leader' }));
-    await screen.findByText('Winner finalized.');
-    expect(payloads[1]).toEqual({ candidate_id: '23' });
+    const action = await screen.findByRole('button', { name: `Finalize ${winner.title}` });
+    expect(screen.getAllByRole('button', { name: /^Finalize / })).toHaveLength(leaders.length);
+    fireEvent.click(action);
+    expect(await screen.findByRole('link', { name: winner.title })).toHaveAttribute('href', `/movies/local/${winner.local_movie_id}`);
+    expect(screen.getByText('Finalized', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getByText(`${totalVotes} total votes`)).toBeInTheDocument();
+    expect(screen.getByText(first.movie.title, { selector: 'strong' }).parentElement).toHaveTextContent('First movie · 4 votes');
+    expect(screen.getByText(second.movie.title, { selector: 'strong' }).parentElement).toHaveTextContent(`Second movie · ${secondCount} votes`);
+    expect(screen.queryByRole('button', { name: 'Vote' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Finalize / })).not.toBeInTheDocument();
 });
 
 it.each(['draft', 'finalized', 'cancelled'])('%s events prevent shortlist actions', async (status) => {
