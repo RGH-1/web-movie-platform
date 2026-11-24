@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import AdminNavigation from '../components/AdminNavigation';
 import MoviePagination from '../components/MoviePagination';
 import { getAdminUsers, updateAdminUserStatus } from '../services/adminUsers';
 
@@ -81,7 +82,7 @@ export default function AdminUsersPage() {
 
     return (
         <main className="container py-4 py-md-5 text-start">
-            <Link to="/">Back to home</Link>
+            <AdminNavigation />
             <h1 className="h2 mt-3">User management</h1>
             {status !== 403 && (
                 <form className="mb-4" onSubmit={submitSearch}>

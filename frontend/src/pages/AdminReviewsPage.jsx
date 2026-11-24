@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import AdminNavigation from '../components/AdminNavigation';
 import MoviePagination from '../components/MoviePagination';
 import { getAdminReviews, moderateReview } from '../services/adminReviews';
 
@@ -90,10 +91,7 @@ export default function AdminReviewsPage() {
 
     return (
         <main className="container py-4 py-md-5 text-start">
-            <nav aria-label="Administrator navigation" className="d-flex flex-wrap gap-3">
-                <Link to="/">Back to home</Link>
-                <Link to="/admin/users">User management</Link>
-            </nav>
+            <AdminNavigation />
             <h1 className="h2 mt-3">Review moderation</h1>
             {status !== 403 && (
                 <div className="d-flex flex-wrap align-items-end gap-3 mb-4">
