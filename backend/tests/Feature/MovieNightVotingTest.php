@@ -35,7 +35,11 @@ class MovieNightVotingTest extends TestCase
         $this->patchJson("$url/rsvp", ['status' => 'accepted'])->assertOk();
         $secondId = $this->postJson("$url/candidates", ['movie_id' => $second->id])
             ->assertCreated()->json('data.candidates.1.id');
-        $this->putJson("$url/vote", ['candidate_id' => $firstId])->assertOk();
+        $this->putJson("$url/vote", ['candidate_id' => $firstId])->assertOk()
+            ->assertJsonPath('data.viewer_candidate_id', $firstId)
+            ->assertJsonPath('data.total_votes', 1)
+            ->assertJsonPath('data.candidates.0.vote_count', 1)
+            ->assertJsonPath('data.candidates.1.vote_count', 0);
         $this->putJson("$url/vote", ['candidate_id' => $secondId])
             ->assertOk()
             ->assertJsonPath('data.viewer_candidate_id', $secondId)
@@ -44,10 +48,17 @@ class MovieNightVotingTest extends TestCase
             ->assertJsonPath('data.candidates.1.vote_count', 1);
         $this->assertDatabaseCount('movie_night_votes', 1);
         $this->postJson("$url/finalize")->assertForbidden();
+        $this->assertDatabaseHas('movie_nights', [
+            'id' => $night->id,
+            'status' => 'scheduled',
+            'winning_movie_id' => null,
+        ]);
 
         $this->signIn($outsider);
         $this->getJson("$url/candidates")->assertNotFound();
         $this->putJson("$url/vote", ['candidate_id' => $firstId])->assertNotFound();
+        $this->postJson("$url/finalize", ['candidate_id' => $firstId])->assertNotFound();
+        $this->assertDatabaseCount('movie_night_votes', 1);
 
         $this->signIn($night->organizer);
         $this->postJson("$url/finalize", ['candidate_id' => $firstId])->assertUnprocessable();
@@ -56,6 +67,7 @@ class MovieNightVotingTest extends TestCase
         $this->postJson("$url/finalize")->assertUnprocessable();
         $this->postJson("$url/finalize", ['candidate_id' => $secondId])
             ->assertOk()
+            ->assertJsonPath('data.status', 'finalized')
             ->assertJsonPath('data.winning_movie_id', (string) $second->id)
             ->assertJsonPath('data.voting_open', false)
             ->assertJsonPath('data.total_votes', 2);
@@ -63,6 +75,14 @@ class MovieNightVotingTest extends TestCase
         $this->postJson("$url/candidates", ['movie_id' => $second->id])->assertForbidden();
         $this->postJson("$url/finalize", ['candidate_id' => $firstId])->assertForbidden();
         $this->getJson($url)->assertOk()->assertJsonPath('data.winning_movie_id', (string) $second->id);
+
+        $this->signIn($participant);
+        $this->putJson("$url/vote", ['candidate_id' => $firstId])->assertForbidden();
+        $this->getJson("$url/candidates")->assertOk()
+            ->assertJsonPath('data.viewer_candidate_id', $secondId)
+            ->assertJsonPath('data.total_votes', 2)
+            ->assertJsonPath('data.candidates.0.vote_count', 1)
+            ->assertJsonPath('data.candidates.1.vote_count', 1);
     }
 
     public function test_declining_removes_an_open_vote_and_the_sole_leader_can_be_finalized(): void
@@ -89,10 +109,15 @@ class MovieNightVotingTest extends TestCase
         $this->putJson("$url/vote", ['candidate_id' => $candidate])->assertOk();
         $this->patchJson("$url/rsvp", ['status' => 'declined'])->assertOk();
         $this->putJson("$url/vote", ['candidate_id' => $candidate])->assertNotFound();
+        $this->assertDatabaseCount('movie_night_votes', 0);
 
         $this->signIn($night->organizer);
-        $this->postJson("$url/finalize")->assertOk()
+        $this->getJson("$url/candidates")->assertOk()
             ->assertJsonPath('data.total_votes', 0)
+            ->assertJsonPath('data.candidates.0.vote_count', 0);
+        $this->putJson("$url/vote", ['candidate_id' => $candidate])->assertOk();
+        $this->postJson("$url/finalize")->assertOk()
+            ->assertJsonPath('data.total_votes', 1)
             ->assertJsonPath('data.winning_movie_id', (string) $movie->id);
     }
 
