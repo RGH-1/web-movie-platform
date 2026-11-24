@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MovieNightMessageCreated;
 use App\Http\Resources\MovieNightMessageResource;
 use App\Models\MovieNight;
 use App\Models\MovieNightMessage;
@@ -47,7 +48,10 @@ class MovieNightMessageController extends Controller
             $message = new MovieNightMessage($data + ['is_spoiler' => false]);
             $message->sender_id = $sender->getKey();
 
-            return $night->messages()->save($message);
+            $night->messages()->save($message);
+            event(new MovieNightMessageCreated((string) $night->getKey()));
+
+            return $message;
         });
 
         return (new MovieNightMessageResource($message))->response()

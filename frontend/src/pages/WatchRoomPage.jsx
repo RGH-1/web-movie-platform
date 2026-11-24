@@ -8,6 +8,7 @@ import {
     getMovieNightVideoAssets,
 } from "../services/movieNights";
 import MovieNightError from "../components/MovieNightError";
+import MovieNightMessages from "../components/MovieNightMessages";
 
 function clock(value) {
     const seconds = Math.floor(Number.isFinite(value) ? value : 0);
@@ -178,6 +179,10 @@ export default function WatchRoomPage() {
                         </p>
                     </div>
                 </section>
+            )}
+            {String(night.id) === nightId && (
+                <MovieNightMessages key={nightId} nightId={nightId}
+                    canSend={["scheduled", "finalized"].includes(night.status)} />
             )}
         </main>
     );

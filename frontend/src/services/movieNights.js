@@ -69,6 +69,18 @@ export async function getMovieNightVideo(id, { signal } = {}) {
     return response.data.data;
 }
 
+export async function getMovieNightMessages(id, { cursor, signal } = {}) {
+    const response = await api.get(`${endpoint}/${encodeURIComponent(id)}/messages`, {
+        params: { cursor },
+        signal,
+    });
+    return response.data;
+}
+
+export function sendMovieNightMessage(id, text, { signal } = {}) {
+    return writeMovieNight('post', `${endpoint}/${encodeURIComponent(id)}/messages`, { text }, signal);
+}
+
 export async function getMovieNightVideoAssets(id, { signal } = {}) {
     const response = await api.get(`${endpoint}/${encodeURIComponent(id)}/video-assets`, { signal });
     return response.data.data;
