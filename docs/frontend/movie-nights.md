@@ -71,6 +71,24 @@ draft so the viewer can try again.
    `X-XSRF-TOKEN` header. The request returns `403`. A guest with a valid
    CSRF token receives `401`.
 
+## Chat spoiler protection (AB#134)
+
+When a clip is assigned, chat records the sender's video position at the moment
+of sending. A regular message from later in the video stays hidden until the
+viewer reaches its timestamp. Seeking backward hides it again unless the viewer
+chose **Reveal spoiler**. Messages marked with **Mark as spoiler** always require
+manual reveal. A manual reveal lasts for the current visit to that watch room.
+Messages sent with no assigned clip have no playback timestamp.
+
+Hidden text is kept out of the rendered chat and its previews. The browser
+still receives the full message through the authorized API. This is a viewing
+convenience and provides no cryptographic secrecy.
+
+To verify with the demo clip, have one participant send a regular message at
+0:42 while the other is at 0:20. Check that the message is hidden, then seek
+forward to 0:42 and back to 0:20. Try **Reveal spoiler** and repeat with a message
+explicitly marked as a spoiler.
+
 ## Manual verification
 
 Start Laravel and Vite with the project's configured development database.

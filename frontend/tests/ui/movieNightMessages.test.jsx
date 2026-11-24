@@ -77,3 +77,64 @@ it('shows connection changes and preserves the message draft after a send failur
     expect(input).toHaveValue('Keep this draft');
     expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
 });
+
+it('hides future text before its timestamp and rechecks when playback moves in either direction', async () => {
+    const ordinary = { id: '1', text: 'Regular chat', created_at: createdAt };
+    const future = { id: '2', text: 'Scene at 42 minutes', created_at: createdAt, video_timestamp_seconds: 2520 };
+    vi.mocked(subscribeToMovieNight).mockReturnValue(vi.fn());
+    vi.mocked(getMovieNightMessages).mockResolvedValue(page([future, ordinary]));
+
+    const { rerender } = render(<MovieNightMessages nightId="3" playbackTime={1200} />);
+    await screen.findByText(ordinary.text);
+    expect(screen.queryByText(future.text)).not.toBeInTheDocument();
+
+    rerender(<MovieNightMessages nightId="3" playbackTime={2520} />);
+    expect(screen.getByText(future.text)).toBeInTheDocument();
+
+    rerender(<MovieNightMessages nightId="3" playbackTime={1200} />);
+    expect(screen.queryByText(future.text)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reveal spoiler' }));
+    expect(screen.getByText(future.text)).toBeInTheDocument();
+    rerender(<MovieNightMessages nightId="3" playbackTime={100} />);
+    expect(screen.getByText(future.text)).toBeInTheDocument();
+});
+
+it('requires manual reveal for explicit spoilers even after their timestamp', async () => {
+    const spoiler = { id: '1', text: 'Manually flagged', created_at: createdAt, video_timestamp_seconds: 20, is_spoiler: true };
+    vi.mocked(subscribeToMovieNight).mockReturnValue(vi.fn());
+    vi.mocked(getMovieNightMessages).mockResolvedValue(page([spoiler]));
+
+    render(<MovieNightMessages nightId="4" playbackTime={30} />);
+
+    const reveal = await screen.findByRole('button', { name: 'Reveal spoiler' });
+    expect(screen.queryByText(spoiler.text)).not.toBeInTheDocument();
+    await userEvent.click(reveal);
+    expect(screen.getByText(spoiler.text)).toBeInTheDocument();
+});
+
+it('sends the current playback position and explicit spoiler flag', async () => {
+    const spoiler = { id: '1', text: 'Manually flagged', created_at: createdAt, video_timestamp_seconds: 42.25, is_spoiler: true };
+    vi.mocked(subscribeToMovieNight).mockReturnValue(vi.fn());
+    vi.mocked(getMovieNightMessages).mockResolvedValue(page([]));
+    vi.mocked(sendMovieNightMessage).mockResolvedValue(spoiler);
+    const getPlaybackTime = vi.fn(() => 42.25);
+
+    render(<MovieNightMessages nightId="5" canSend playbackTime={40} getPlaybackTime={getPlaybackTime} />);
+    await screen.findByText('No messages yet.');
+    expect(getPlaybackTime).not.toHaveBeenCalled();
+
+    const user = userEvent.setup();
+    const checkbox = screen.getByRole('checkbox', { name: 'Mark as spoiler' });
+    await user.type(screen.getByRole('textbox', { name: 'Message' }), spoiler.text);
+    await user.click(checkbox);
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    expect(sendMovieNightMessage).toHaveBeenCalledWith('5', {
+        text: spoiler.text,
+        video_timestamp_seconds: 42.25,
+        is_spoiler: true,
+    }, { signal: expect.any(AbortSignal) });
+    expect(checkbox).not.toBeChecked();
+    expect(screen.queryByText(spoiler.text)).not.toBeInTheDocument();
+});
