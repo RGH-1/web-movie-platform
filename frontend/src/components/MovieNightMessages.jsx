@@ -23,10 +23,12 @@ function mergeMessages(current, incoming) {
     return [...byId.values()].sort((a, b) => compareIds(a.id, b.id));
 }
 
-export default function MovieNightMessages({ nightId, canSend }) {
+export default function MovieNightMessages({ nightId, canSend, playbackTime, getPlaybackTime }) {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [text, setText] = useState('');
+    const [isSpoiler, setIsSpoiler] = useState(false);
+    const [revealedMessages, setRevealedMessages] = useState(() => new Set());
     const [sending, setSending] = useState(false);
     const [readError, setReadError] = useState('');
     const [sendError, setSendError] = useState('');
@@ -104,10 +106,15 @@ export default function MovieNightMessages({ nightId, canSend }) {
         setSending(true);
         setSendError('');
         try {
-            const message = await sendMovieNightMessage(nightId, text.trim(), { signal });
+            const message = await sendMovieNightMessage(nightId, {
+                text: text.trim(),
+                video_timestamp_seconds: getPlaybackTime?.() ?? null,
+                is_spoiler: isSpoiler,
+            }, { signal });
             if (signal.aborted) return;
             setMessages((current) => mergeMessages(current, [message]));
             setText('');
+            setIsSpoiler(false);
             void refresh();
         } catch (error) {
             if (!signal.aborted) {
@@ -124,6 +131,9 @@ export default function MovieNightMessages({ nightId, canSend }) {
         <section className="card mt-3" aria-labelledby="room-messages-heading">
             <div className="card-body">
                 <h2 id="room-messages-heading" className="h5">Room messages</h2>
+                <p className="small text-body-secondary">
+                    Spoiler hiding only affects what you see in chat. Your browser still receives the full message.
+                </p>
                 {loading && <p role="status">Loading messages…</p>}
                 <p className="small text-body-secondary" role="status">{connectionLabels[connection]}</p>
                 {readError && <p role="alert">{readError}</p>}
@@ -133,19 +143,35 @@ export default function MovieNightMessages({ nightId, canSend }) {
                 )}
                 {!loading && !readError && messages.length === 0 && <p>No messages yet.</p>}
                 <ol className="list-group mb-3" aria-live="polite">
-                    {messages.map((message) => (
-                        <li key={message.id} className="list-group-item text-break">
-                            <div className="d-flex flex-wrap justify-content-between gap-2 mb-1">
-                                <strong>{message.sender_name || 'Unknown sender'}</strong>
-                                <time className="small text-body-secondary" dateTime={message.created_at}>
-                                    {messageTime.format(new Date(message.created_at))}
-                                </time>
-                            </div>
-                            {message.is_spoiler
-                                ? <details><summary>Spoiler</summary>{message.text}</details>
-                                : <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>}
-                        </li>
-                    ))}
+                    {messages.map((message) => {
+                        const aheadOfPlayback = Number.isFinite(message.video_timestamp_seconds)
+                            && message.video_timestamp_seconds > (playbackTime ?? 0);
+                        const hidden = !revealedMessages.has(message.id) && (message.is_spoiler || aheadOfPlayback);
+
+                        return (
+                            <li key={message.id} className="list-group-item text-break">
+                                <div className="d-flex flex-wrap justify-content-between gap-2 mb-1">
+                                    <strong>{message.sender_name || 'Unknown sender'}</strong>
+                                    <time className="small text-body-secondary" dateTime={message.created_at}>
+                                        {messageTime.format(new Date(message.created_at))}
+                                    </time>
+                                </div>
+                                {hidden ? (
+                                    <div className="d-flex flex-wrap align-items-center gap-2">
+                                        <span className="small text-body-secondary">
+                                            {message.is_spoiler
+                                                ? 'Marked as a spoiler by the sender.'
+                                                : 'Hidden until you reach this point in the video.'}
+                                        </span>
+                                        <button type="button" className="btn btn-outline-secondary btn-sm"
+                                            onClick={() => setRevealedMessages((current) => new Set(current).add(message.id))}>
+                                            Reveal spoiler
+                                        </button>
+                                    </div>
+                                ) : <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>}
+                            </li>
+                        );
+                    })}
                 </ol>
                 {canSend && (
                     <form onSubmit={submit}>
@@ -153,6 +179,11 @@ export default function MovieNightMessages({ nightId, canSend }) {
                         <textarea id="room-message" className="form-control mb-2"
                             value={text} onChange={(event) => setText(event.target.value)}
                             maxLength={1000} disabled={sending} required />
+                        <div className="form-check mb-2">
+                            <input id="room-message-spoiler" type="checkbox" className="form-check-input"
+                                checked={isSpoiler} onChange={(event) => setIsSpoiler(event.target.checked)} disabled={sending} />
+                            <label htmlFor="room-message-spoiler" className="form-check-label">Mark as spoiler</label>
+                        </div>
                         {sendError && <p role="alert">{sendError}</p>}
                         <button className="btn btn-primary" disabled={sending || !text.trim()}>
                             {sending ? 'Sending…' : 'Send'}

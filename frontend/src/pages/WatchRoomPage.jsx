@@ -56,12 +56,28 @@ export default function WatchRoomPage() {
     useEffect(() => {
         void load();
     }, [load]);
+    function updatePlaybackTime(event) {
+        setTime(event.currentTarget.currentTime);
+    }
+
+    function getPlaybackTime() {
+        const currentTime = video.current?.currentTime;
+        if (!selected || !Number.isFinite(currentTime)) return null;
+
+        return Math.min(currentTime, selected.video.duration_seconds);
+    }
+
     async function assign(event) {
         event.preventDefault();
         if (!assetId || busy) return;
         setBusy(true);
         try {
-            setSelected(await assignMovieNightVideo(nightId, assetId));
+            const nextVideo = await assignMovieNightVideo(nightId, assetId);
+            if (nextVideo.video.id !== selected?.video.id) {
+                setTime(0);
+                setDuration(0);
+            }
+            setSelected(nextVideo);
         } catch (e) {
             setError(e);
         } finally {
@@ -153,14 +169,15 @@ export default function WatchRoomPage() {
                     <div className="card-body">
                         <h2 className="h5">{selected.video.title}</h2>
                         <video
+                            key={`${nightId}:${selected.video.id}`}
                             ref={video}
                             className="w-100"
                             controls
                             crossOrigin="use-credentials"
                             src={src}
-                            onTimeUpdate={(e) =>
-                                setTime(e.currentTarget.currentTime)
-                            }
+                            onTimeUpdate={updatePlaybackTime}
+                            onSeeking={updatePlaybackTime}
+                            onSeeked={updatePlaybackTime}
                             onLoadedMetadata={(e) =>
                                 setDuration(e.currentTarget.duration)
                             }
@@ -181,8 +198,13 @@ export default function WatchRoomPage() {
                 </section>
             )}
             {String(night.id) === nightId && (
-                <MovieNightMessages key={nightId} nightId={nightId}
-                    canSend={["scheduled", "finalized"].includes(night.status)} />
+                <MovieNightMessages
+                    key={nightId}
+                    nightId={nightId}
+                    canSend={["scheduled", "finalized"].includes(night.status)}
+                    playbackTime={selected ? time : null}
+                    getPlaybackTime={getPlaybackTime}
+                />
             )}
         </main>
     );

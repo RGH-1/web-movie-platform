@@ -77,8 +77,8 @@ export async function getMovieNightMessages(id, { cursor, signal } = {}) {
     return response.data;
 }
 
-export function sendMovieNightMessage(id, text, { signal } = {}) {
-    return writeMovieNight('post', `${endpoint}/${encodeURIComponent(id)}/messages`, { text }, signal);
+export function sendMovieNightMessage(id, fields, { signal } = {}) {
+    return writeMovieNight('post', `${endpoint}/${encodeURIComponent(id)}/messages`, fields, signal);
 }
 
 export async function getMovieNightVideoAssets(id, { signal } = {}) {
