@@ -2,12 +2,12 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import api from './api';
 
-export function subscribeToMovieNight(nightId, refresh, unavailable, signal) {
+export function subscribeToMovieNight(nightId, { refresh, onStatus }, signal) {
     const { VITE_REVERB_APP_KEY: key, VITE_REVERB_HOST: host,
         VITE_REVERB_PORT: port, VITE_REVERB_SCHEME: scheme } = import.meta.env;
 
     if (!key || !host) {
-        unavailable();
+        onStatus('unavailable');
         return () => {};
     }
 
@@ -37,12 +37,27 @@ export function subscribeToMovieNight(nightId, refresh, unavailable, signal) {
     const channelName = `movie-nights.${nightId}`;
     const channel = echo.private(channelName)
         .listen('.message.created', refresh)
-        .subscribed(refresh)
-        .error(unavailable);
-    client.connection.bind('unavailable', unavailable);
+        .subscribed(() => {
+            onStatus('live');
+            refresh();
+        })
+        .error(() => {
+            onStatus('unavailable');
+            refresh();
+        });
+
+    function updateConnection({ current }) {
+        if (current === 'connecting' || current === 'connected') {
+            onStatus('connecting');
+        } else if (['unavailable', 'failed', 'disconnected'].includes(current)) {
+            onStatus('unavailable');
+        }
+    }
+
+    client.connection.bind('state_change', updateConnection);
 
     return () => {
-        client.connection.unbind('unavailable', unavailable);
+        client.connection.unbind('state_change', updateConnection);
         channel.stopListening('.message.created', refresh);
         echo.leave(channelName);
         echo.disconnect();

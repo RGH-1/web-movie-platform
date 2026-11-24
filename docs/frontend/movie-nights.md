@@ -51,9 +51,16 @@ endpoint. A queue worker is unnecessary for these notifications. After
 resubscribing, the browser follows the message cursors until it reaches the
 last synchronized ID and merges results by ID.
 
+Messages show the sender's display name and local time, ordered from oldest to
+newest by message ID. The chat shows its connection status and offers a manual
+history reload when live updates are unavailable. A failed send keeps the
+draft so the viewer can try again.
+
 1. Open the same scheduled or finalized watch room in two browser profiles
    signed in as the organizer and an accepted participant. Send a message
-   in each profile and check that it appears once in both without reloading.
+   in each profile and check that it appears once in both without reloading,
+   with the correct author and time. Refresh the page and check that the
+   message history remains in the same order.
 2. Take the participant browser offline with developer tools, send messages
    from the organizer, and bring the participant browser back online.
    Confirm the missed messages appear once and new messages still arrive live.
