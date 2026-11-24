@@ -277,6 +277,11 @@ class MovieNight extends Model
         return $this->hasMany(MovieNightInvitation::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(MovieNightMessage::class);
+    }
+
     public function participants(): BelongsToMany
     {
         return $this->belongsToMany(

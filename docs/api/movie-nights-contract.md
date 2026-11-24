@@ -123,6 +123,26 @@ A repeated cancellation returns 403 under the existing V1 policy.
 Cancellation preserves any existing winning movie.
 Cancelled nights remain protected from edits and new vote/message writes.
 
+### Messages
+
+Both message endpoints require an authenticated organizer or accepted participant.
+Pending invitees and nonparticipants receive `404`. A room member can send while
+the room is scheduled or finalized and can still read history after cancellation.
+
+- `GET /api/v1/movie-nights/{id}/messages` returns up to 50 messages in
+  descending ID order. Follow `links.next` to load older messages.
+- `POST /api/v1/movie-nights/{id}/messages` accepts `text` (1–1,000 characters
+  after trimming), optional `is_spoiler` (defaults to `false`), and optional
+  `video_timestamp_seconds`. A non-null playback timestamp can be fractional
+  and must fall between zero and the assigned video's duration, inclusive.
+  Invalid fields return `422`. Sends are limited to 20 attempts per minute
+  per account. Excess attempts return `429` with `Retry-After`.
+
+A successful send returns `201` with the saved message under `data`. History
+uses the same message shape, including string `id`, `movie_night_id`, and
+`sender_id`, the submitted fields, and ISO 8601 `created_at` and
+`updated_at` timestamps.
+
 ## Invitations and RSVP (AB#124)
 
 - POST accepts a body with `invitee_id` set to an existing user ID and returns

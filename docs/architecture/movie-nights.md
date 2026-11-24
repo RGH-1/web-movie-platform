@@ -120,7 +120,9 @@ AB#121 permits trusted participants to read scheduled, finalized, and
 cancelled nights. Drafts remain organizer-only.
 
 Accepted participants can propose candidates and vote on scheduled nights.
-Finalization is organizer-only. The message policy remains organizer-only.
+Finalization is organizer-only. Organizers and accepted participants can send
+messages while the night is scheduled or finalized. Message history follows
+room visibility and remains available to authorized members after cancellation.
 
 ## Application write boundary
 
@@ -194,6 +196,6 @@ results. The development migration check exercises the configured database.
 | Development MySQL migration | Pending |
 | Manual ownership and stale-state checks | Pending |
 | Multi-connection MySQL contention test | Not performed |
-| Vote/message HTTP enforcement | Awaiting those feature implementations |
+| Vote/message HTTP enforcement | Voting and message endpoints use the locked authorization service |
 
 Record actual results and the tested commit before closing the task.
