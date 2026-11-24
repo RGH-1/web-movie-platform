@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AdminNavigation from '../components/AdminNavigation';
 import AdminMovieError from '../components/AdminMovieError';
 import AdminMovieForm from '../components/AdminMovieForm';
 import MoviePagination from '../components/MoviePagination';
@@ -99,10 +100,7 @@ function AdminMovieCatalog() {
     const accessDenied = [401, 403].includes(current?.error?.response?.status);
     return (
         <main className="container py-4 py-md-5 text-start">
-            <nav aria-label="Administrator navigation" className="d-flex flex-wrap gap-3">
-                <Link to="/">Back to home</Link>
-                <Link to="/admin/users">User management</Link>
-            </nav>
+            <AdminNavigation />
             <header className="d-flex flex-wrap justify-content-between align-items-center gap-3 my-3">
                 <h1 className="h2 mb-0">Movie management</h1>
                 {response && !editor && <button type="button" className="btn btn-primary" disabled={!!selected}
