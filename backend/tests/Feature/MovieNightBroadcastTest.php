@@ -44,6 +44,12 @@ class MovieNightBroadcastTest extends TestCase
         $this->actingAs($participant, 'web')->postJson($endpoint, $subscription)
             ->assertOk()->assertJsonStructure(['auth']);
 
+        $participant->forceFill(['disabled_at' => now()])->save();
+        $this->postJson($endpoint, $subscription)->assertUnauthorized();
+
+        $participant->forceFill(['disabled_at' => null])->save();
+        Auth::forgetGuards();
+        $this->actingAs($participant, 'web');
         $night->participants()->detach($participant);
         $this->postJson($endpoint, $subscription)->assertForbidden();
     }

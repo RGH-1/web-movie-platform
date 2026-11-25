@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Laravel\Socialite\Facades\Socialite;
 use Tests\TestCase;
 
 class OAuthRedirectTest extends TestCase
@@ -27,9 +26,14 @@ class OAuthRedirectTest extends TestCase
         config()->set('services.github.client_id', 'test-client');
         config()->set('services.github.client_secret', 'test-secret');
 
-        Socialite::fake('github');
-
-        $this->get('/auth/github/redirect')
+        $response = $this->get('/auth/github/redirect')
             ->assertRedirect();
+
+        $location = $response->headers->get('Location');
+        $this->assertSame('github.com', parse_url($location, PHP_URL_HOST));
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertSame('test-client', $query['client_id'] ?? null);
+        $this->assertArrayNotHasKey('client_secret', $query);
+        $this->assertStringNotContainsString('test-secret', $location);
     }
 }
