@@ -34,6 +34,7 @@ class TmdbIntegrationTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertDontSee('fake-test-token')
             ->assertJsonCount(1, 'results')
             ->assertJsonPath('results.0.id', 157336)
             ->assertJsonPath('results.0.title', 'Interstellar')
@@ -96,7 +97,9 @@ class TmdbIntegrationTest extends TestCase
         Http::preventStrayRequests();
 
         Http::fake([
-            'api.themoviedb.org/3/search/movie*' => Http::response([], 500),
+            'api.themoviedb.org/3/search/movie*' => Http::response([
+                'message' => 'Provider rejected fake-test-token',
+            ], 500),
         ]);
 
         $this->getJson('/api/integration/tmdb/search?query=Interstellar')
