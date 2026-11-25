@@ -100,6 +100,8 @@ export default function WatchRoomPage() {
                             : "Could not load this watch room."
                     }
                     onRetry={() => {
+                        setTime(0);
+                        setDuration(0);
                         setError(null);
                         void load();
                     }}

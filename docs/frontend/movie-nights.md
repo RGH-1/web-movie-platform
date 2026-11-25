@@ -144,3 +144,12 @@ body for a future date:
 
 See the [Laravel contract](../api/movie-nights-contract.md) for visibility,
 status transitions, and validation.
+
+## Multi-user watch-room verification — AB#135
+
+See [the watch-room verification report](../testing/watch-room-e2e.md)
+for the two-browser procedure, automated coverage, configuration, results,
+and known behavior boundaries.
+
+Video retry resets playback time and duration before remounting the player,
+so spoiler checks do not reuse the previous playback position.
