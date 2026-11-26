@@ -212,10 +212,19 @@ the user's normal My Movie Nights list.
 
 ## Watch room video assets (AB#130)
 
-Video assets are licensed/self-created demo MP4 files stored on Laravel's private
-`local` disk (for example `storage/app/private/video-assets/demo.mp4`), never in
-the public web root. No demo media file is bundled: create a `video_assets`
-record with the private relative path and duration before using the Watch Room.
+Video assets are MP4 files stored on Laravel's private `local` disk rather
+than in the public web root.
+
+The repository includes the 60-second demo clip at
+`backend/storage/app/private/videos/watch-room-demo.mp4`.
+After applying migrations, register its metadata from `backend`:
+
+```powershell
+php artisan db:seed --class=VideoAssetSeeder
+```
+
+The organizer selects the registered clip after finalizing a movie-night
+winner. Catalog movies are not automatically mapped to video assets.
 
 - `GET /api/v1/movie-nights/{id}/video-assets` lists safe asset metadata for an
   eligible organizer.
