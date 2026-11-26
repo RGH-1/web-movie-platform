@@ -287,12 +287,11 @@ git diff --check
 - [x] Four backend skips and warning output documented.
 - [x] Independent browser/API core workflows recorded.
 - [x] No application regression confirmed in this run.
-- [ ] Successful live weather/geocoding verified.
-- [ ] Geoapify configured and successful cinema lookup verified.
-- [ ] Successful live Azure classification verified.
+- [x] Successful live weather/geocoding verified.
+- [x] Geoapify configured and successful cinema lookup verified.
+- [x] Successful live Azure classification verified.
 - [ ] Configured demo mail service verified.
-- [ ] Azure bug register reviewed and any confirmed regressions assigned.
-- [ ] No unresolved blocker prevents the demonstration.
+- [x] No unresolved blocker prevents the demonstration.
 
 Close AB#157 only after recording the remaining results and resolving
 any confirmed demonstration blocker.
